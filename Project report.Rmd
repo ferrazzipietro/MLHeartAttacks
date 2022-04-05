@@ -1,0 +1,631 @@
+---
+title: "ML project"
+author: "Pietro"
+date: "2/24/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r,  include = FALSE}
+library(tidyverse)
+library(gridExtra)
+library(GGally)
+library(ggthemes) # Load
+library(ggpubr)
+setwd("~/Desktop/ML/ML-course-obesity")
+dat <- read.csv('Heart failure.csv', sep=";") #heart....
+dat <- dat %>% as_tibble()
+n <- nrow(dat)
+```
+
+Two aricles where these data come from: 
+
+https://bmcmedinformdecismak.biomedcentral.com/articles/10.1186/s12911-020-1023-5#Tab1
+
+Ahmad T, Munir A, Bhatti SH, Aftab M, Raza MA (2017) Survival analysis of heart failure patients: A case study. PLoS ONE 12(7): e0181001. https://doi.org/10.1371/journal.pone.0181001
+
+These are the data we have about the survavial from 
+```{r, include=FALSE}
+dat
+str(dat)
+```
+
+Gender, Smoking, Diabetes, BP and Anaemia are factors that have been saved as 
+numerical values. To start, we decided to transform them into categorical variables
+```{r echo=FALSE}
+dat <- dat%>% mutate(Event=as.factor(dat$Event),
+                     Gender=as.factor(Gender),
+                     Smoking=as.factor(Smoking),
+                     Diabetes=as.factor(Diabetes),
+                     BP=as.factor(BP),
+                     Anaemia=as.factor(Anaemia))
+```
+
+# DESCRIPTION OF THE DATA
+...
+IMPORTANT: explain difference btw usual data with only classification of the event and this problem, that requires survival models.
+
+
+Before looking at the data, the split the data in one set for the train and one for the test. In this way, we will assure that the observations we will do and the decisions that we will make based on them will not be biased by the knowledge acquired from the test set. What follows is based on the training set.
+
+```{r, echo=FALSE}
+set.seed(1234)
+train.idxs <- sample(1:n, floor(n*0.7))
+tot <- dat
+test <- tot[-train.idxs,]
+train <- tot[train.idxs,]
+```
+
+# EXPLORATIVE ANALYSIS
+
+We started with the explorative analysis of the data. The aim of this first 
+section is to reach a general understanding of the data we have, their distribution, the correlation 
+between variables and in general all the aspects that concern the descriptive 
+analysis of the observations. 
+Only after a rigorous analysis we can start to model the data, since before that 
+we will not have a complete comprehension of the data.
+
+## Pairs of continous variables
+
+First, we are interested to see the joint and disjoint distribution of each variable.
+These are the distribution of each numerical variable and of the combination of all
+of them
+```{r graphs1, include = FALSE}
+g <- ggplot(dat, aes(y=TIME))
+
+ggpairs(dat %>% select(Age, Ejection.Fraction, Sodium, 
+                       Creatinine,Pletelets, CPK )) +
+  scale_color_stata()
+
+```
+The correlation is significantly different from zero only for the couples 
+Creatinine-Age, Creatinine-Sodium and Sodium-Ejection.Fraction, and in any case is very low.
+
+
+
+
+## Time and factors
+
+An important thing to see how the time under observation is related to the other variables. The following boxplots show that there is not relation between the time and the binomial variables. This result is interesting, since it tell us that the experiment that generated he data was unbiased by differences between the persons under observation. In other words, we can trust these data and use them to provide results that will not be biased by a lack of strictness during the data collection, since who collected them randomized the sample.
+
+```{r graphs2, echo=FALSE, fig.height = 2.8, fig.align = "center"}
+g <- ggplot(dat, aes(y=TIME))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="Event", y = "TIME", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+ggarrange(ggarrange(g2,g3,g4, ncol=3, nrow=1),ggarrange(g5,g6),
+          ncol = 1, nrow = 2, 
+          align="h") %>% annotate_figure(top=text_grob("TIME",face="bold"))
+```
+
+
+In addition, we can also have a look at the distributions of the persons inside the groups defined by different levels of the dichotomous variables. As shown in these histograms, they are basically even distributed.
+
+```{r histograms of bin, include=FALSE, echo=FALSE }
+g <- ggplot(dat) 
+
+g1 <- g + geom_histogram(aes(Gender), stat="count",
+                             width=0.2, color="#F8766D", fill=1) +
+  theme_light()
+g2 <- g  + geom_histogram(aes(Smoking), stat="count",
+                       width=0.2, color=1, fill="white") +
+  theme_light()
+g3 <- g  + geom_histogram(aes(Diabetes), stat="count",
+                       width=0.2, color=1, fill="white") +
+  theme_light()
+g4 <- g  + geom_histogram(aes(BP), stat="count",
+                       width=0.2, color="#F8766D", fill="#F8766A") +
+  theme_light()
+g5 <- g  + geom_histogram(aes(Anaemia), stat="count",
+                      width=0.2, color=1, fill="white") +
+  theme_light()
+ggarrange(g1,g2,g3,g4,g5, ncol = 2, nrow = 3) 
+```
+
+
+We have to consider aside the boxplot about the time of observation for the group of 
+people on which the event has been observed. Comparing this one with the distribution of
+the other group, it is clear that the time under observation for people that
+have presented an hart attack is lower than the the one of the ones that did not. As expected, this indicates that the heart attack looks to reduce the time under observation. It can seems obvious, but not having this result would have lead us 
+to conclude that the data were not able to explain the relation between the explicative variables and the answer variable.
+
+```{r graph3, fig.height = 3, fig.width = 3, fig.align = "center", echo=FALSE }
+g1 + theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13,face="bold"),
+        legend.title =element_text(size=13,face="bold") ,
+        legend.text =element_text(size=12,face="bold") )
+```
+
+
+
+
+
+## Countinous variables vs Event or cathegorical variables 
+Then, we looked at the relation between the pairs of cathegorical and continous variables, included the Event. 
+
+The scope of the following analysis is double:
+
+  a) to understand if the fact that the event of having an heart attack defines different distributions of the continuous variables
+  
+  b) to understand if the categorical variables are related to the continuous ones
+
+```{r graphs4, echo=FALSE, fig.height =  2.8}
+g <- ggplot(dat, aes(y=Age))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="", y = "", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+ggarrange(g1,g2,g3,g4,g5,g6,
+          ncol = 3, nrow = 2) %>% annotate_figure(top=text_grob("Age",
+                                                                face="bold"))
+```
+
+It seems that the population on which the event has occurred is older than the one that did not observed it. It is reasonable, since heart attack are generally more frequent in older persons.
+For all the other variables, there is basically not difference between the groups. 
+Some points are over 1.5 times the interquartile distance and quartile, but they do not look to be to far from the median. There is not enough evidence to  consider them as outliers, but it is of interest to start noticing them and keeping that in mind. The
+following analysis will tell us how to procede under this point of view.
+It should be noticed that, as said at the beginning, the youngest patients that partecipated at this
+research were fourty years old.
+
+```{r graphs5, echo=FALSE, fig.height =  2.8}
+g <- ggplot(dat, aes(y=Ejection.Fraction))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="", y = "", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+ggarrange(g1,g2,g3,g4,g5,g6,
+          ncol = 3, nrow = 2) %>% annotate_figure(top=text_grob("Ejection.Fraction",
+                                                                face="bold"))
+```
+
+
+It seems that the population on which the event has occurred has lower values of 
+ejection fraction. That means that this variable can be useful to describe the distribution of the vent over the population.
+
+About the relation between this variable and the categorical ones, 
+we can say something similar to what we said for the age. For men, the ejection fraction looks to be lower as for persons with diabetes. The remaining ones are not really related to this continous variable
+
+
+
+```{r graphs6, echo=FALSE, fig.height =  2.8}
+g <- ggplot(dat, aes(y=Sodium))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="", y = "", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+ggarrange(g1,g2,g3,g4,g5,g6,
+          ncol = 3, nrow = 2) %>% annotate_figure(top=text_grob("Sodium",
+                                                                face="bold"))
+```
+
+
+In this situation data look to be less regular. There are multiple points that are enough far from the median to allow us to say that a deeper analysis of outliers could be performed. In particular, some data presents an unusual low value of Sodium.
+Talking about differences between the distribution of the amount of sodium in the
+two groups, there is not difference to be noticed.
+On the other hand, this variable does not look very useful in term of explaining the
+distribution of the event, since the level of sodium is almost the same for both the groups of people having had an heart attack while being under observation and people who didn't.
+
+
+
+```{r graphs7, echo=FALSE, fig.height =  2.8}
+g <- ggplot(dat, aes(y=Pletelets))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="", y = "", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+ggarrange(g1,g2,g3,g4,g5,g6,
+          ncol = 3, nrow = 2) %>% annotate_figure(top=text_grob("Pletelets",
+                                                                face="bold"))
+```
+
+
+The platelets' value has not distribution changes between the people having had the heart attack and the others. This suggest that this variable is not really useful for our scopes. Furthermore, we can notice that there is not difference in distribution between this continuous variable and all the others.
+
+
+
+
+Before looking at how Creatinine variable is related to the categorical ones, we can look at the distribution of it:
+
+```{r graphs8, fig.height = 1.5, fig.width = 5, fig.align = "center", echo=FALSE}
+
+ggplot(dat) + stat_density(aes(Creatinine), col="#F8766D", adjust = 2,
+                           alpha=0.8) +
+  theme_minimal() + labs(y="Density") +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13,face="bold"),
+        legend.title =element_text(size=13,face="bold") ,
+        legend.text =element_text(size=12,face="bold"))
+
+```
+
+
+The distribution has a long right tail. In order to provide a useful visualization, we removed those very high value. More specifically, we removed from the visualization observation with a level of Creatinine higher than 5.
+
+
+```{r graphs9, echo=FALSE, fig.height =  2.8}
+g <- ggplot(dat %>% filter(Creatinine<5), aes(y=Creatinine))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="", y = "", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+ggarrange(g1,g2,g3,g4,g5,g6,
+          ncol = 3, nrow = 2) %>% annotate_figure(top=text_grob("Creatinine",
+                                                                face="bold"))
+```
+
+
+As saw before, the distribution of the Creatinine variable is uneven, even removing the larger values. Anyway, it seems that this variable can be considered between the ones useful to forcast the event, since people having observed the event during the observation time seems to have higher value of Creatinine. On the other hand, the other categorical variables do not present differences in distribution in the two groups identify by the two levels of each categorical variable.
+
+
+
+Before analyzing the level of enzyme CPK, we had to do the same procedure we used
+with the Creatinine variable. In fact, its distribution is unbalanced:
+
+```{r graphs10, fig.height = 1.5, fig.width = 5, fig.align = "center", echo=FALSE}
+
+ggplot(dat) + stat_density(aes(CPK), col="#F8766D", adjust = 2,
+                           alpha=0.8) +
+  theme_minimal() + labs(y="Density") +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13,face="bold"),
+        legend.title =element_text(size=13,face="bold") ,
+        legend.text =element_text(size=12,face="bold"))
+
+```
+
+
+This curve is very similar to the distribution of the Creatinine variable. This relation between the two of them can also been seen 
+
+```{r graphs11, echo=FALSE, fig.height =  2.8}
+g <- ggplot(dat %>% filter(CPK<4000), aes(y=CPK))
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+  labs(title="",x="", y = "", color="Event")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+  labs(title="",x="", y = "", color="Smoking")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+  labs(title="",x="", y = "", color="Diabetes")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+  labs(title="",x="", y = "", color="BP")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+  labs(title="",x="", y = "", color="Anaemia")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+ggarrange(g1,g2,g3,g4,g5,g6,
+          ncol = 3, nrow = 2) %>% annotate_figure(top=text_grob("CPK",
+                                                                face="bold"))
+```
+
+Even the distribution of CPK is unbalanced to the rigth, with a lot of big values.
+Unfortunatly, the CPK/Event boxplot shows that the former variable is probably not really useful to explain the latter one. The relation between the level of CPK and the other factors is the same of the Creatinine variable. 
+
+From this latter graphs, we can conclude that the relation between these two variables (Creatinine and CPK) is be very strong.  The difference between the two of them is only in the effect that they have on the distribution of the events. While the Creatinine level looks to have an effect on the heart attacks, the CPK does not.
+
+We should take into account this observation while performing variable selection.
+
+
+## Pairs of continuous variables and Event
+
+The next step is to look for patterns between pairs of continuous variables and the fact that the event was observed or not
+
+```{r graphs12, fig.align = "center", echo=FALSE, fig.height = 12, fig.width=15}
+col <- scale_color_gradient(high=1, low = 0, 
+                            n.breaks=4,
+                            breaks = waiver())
+
+g <- ggplot(dat, aes(col=Event))
+g1 <- g + geom_point(aes(x=Sodium, y=Age),lwd=1) 
+g2 <- g + geom_point(aes(x=Sodium,  y=Creatinine),lwd=1) 
+g3 <- g + geom_point(aes(x=Sodium, y=CPK),lwd=1) 
+g4 <- g + geom_point(aes(x=Sodium, y=Pletelets),lwd=1) 
+g5 <- g + geom_point(aes(x=Sodium, y=Ejection.Fraction),lwd=1) 
+g6 <- g + geom_point(aes(x=CPK, y=Age),lwd=1) 
+g7 <- g + geom_point(aes(x=CPK, y=Creatinine),lwd=1) 
+g8 <- g + geom_point(aes(x=CPK, y=Pletelets),lwd=1) 
+g9 <- g + geom_point(aes(x=CPK, y=Ejection.Fraction),lwd=1) 
+g10 <- g + geom_point(aes(x=Pletelets, y=Creatinine),lwd=1) 
+g11 <- g + geom_point(aes(x=Pletelets, y=Age),lwd=1) 
+g12 <- g + geom_point(aes(x=Pletelets, y=Ejection.Fraction),lwd=1) 
+g13 <- g + geom_point(aes(x=Age, y=CPK), lwd=1)
+g14 <- g + geom_point(aes(x=Age, y=Ejection.Fraction), lwd=1)
+g15 <- g + geom_point(aes(x=CPK, y=Ejection.Fraction), lwd=1)
+
+ggarrange(g1,g2,g3,g4,g5,g6,g7,g8,g9,g10,g11,g12,g13,g14,g15,
+          ncol = 3, nrow = 5) %>% 
+  annotate_figure(top=text_grob("Distribution of events over pairs of var",
+                                face="bold"))
+
+```
+
+
+There are not natural clusters defined by these composition of variables.
+
+
+## Chategorical variables and Event
+
+An other interesting thing to see is if the binomial variables have impact over the Event. To perform this check we compared dived in two groups, defined by the levels of the factors, the people that had an heart attack while being under observation. The results follow:
+
+```{r tables, echo=FALSE}
+eventYN <- as.factor(dat$Event) 
+levels(eventYN)<- c("Yes", "No")
+pGender <- prop.table(table(Event=eventYN, Gender = dat$Gender),2)
+pSmoke <- prop.table(table(Event=eventYN, smoking=dat$Smoking),2)
+pDiab <- prop.table(table(Event=eventYN, Diabetes=dat$Diabetes),2)
+pBP <- prop.table(table(Event=eventYN, BP=dat$BP),2)
+pAnaemia <- prop.table(table(Event=eventYN, Anaemia=dat$Anaemia),2)
+
+pGender
+pSmoke
+pDiab
+pBP
+pAnaemia
+```
+
+The columns of each of these tables represent the frequencies of people that have or have not experienced the event. The results show that the distribution of this variable is not influenced by the levels of the other categorical ones.
+
+
+## Conclusions of typical explorative analysis
+
+CHANGE THE WORLD TYPICAL!!!!!!
+To summarize the result of this explorative analysis, we can say that:
+* there is a strong relation between variables CPK and Creatinine;
+* the level of Creatinine looks to have an high impact;
+* the level of Sodium, the Age and the Ejection Fraction look to have a low impact on the Event variable;
+* the number of Pletelets in the blood and the level of CPK have no impact on the Event variable.
+* There are not natural clusters defined by pairs of countinous variables
+
+
+
+
+## Survival models
+
+As said in the introduction to the data, this dataset has a specificity regarding the way we the variable Event has been collected. More precisely,  each patient was under observation for a certain number of days (variable TIME). That means that the Event could be observed only under the period of observation of each person. This considerations leaded us to use the traditional approach to data of this kind, represented by survival models. In particular, we decided to use a combination of these common tools and of more modern approaches.
+
+To perform our explorative analysis was then necessary to look also at the survival curves, in orther to compare them and decide which variables where really useful. From the previous section, we knew that we had to take care of the impact of Sodium, Age, Ejection Fraction, Pletelets and CPK
+
+
+
+```{r surv1, echo=FALSE, fig.height = 6}
+library(survival)
+library(survminer)
+s1 <- Surv(dat$TIME, dat$Event)
+surv_m1 <- survfit(s1~dat$Gender, error="greenwood",
+                   conf.type="log", se.fit=TRUE, conf.int=0.95,
+                   data=dat)
+
+par(mfrow=c(3,2))
+g <- list()
+Evento <- as.numeric(levels(as.factor(dat$Event)))[as.factor(dat$Event)]
+dat$Evento=Evento
+g[[1]] <- ggsurvplot(survfit(Surv(TIME, (Evento),)~Gender, data=dat),
+                 conf.int=T, pval.method=T, log.rank.weights="1")
+g[[2]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Smoking, data=dat),
+                 conf.int=T, pval.method=T, log.rank.weights="1")
+g[[3]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Diabetes, data=dat),
+                 conf.int=T, pval.method=T, log.rank.weights="1")
+g[[4]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~BP, data=dat),
+                 conf.int=T, pval.method=T, log.rank.weights="1")
+g[[5]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Anaemia, data=dat),
+                 conf.int=T, pval.method=T, log.rank.weights="1")
+# g1
+# g2
+# g3
+# g4
+# g5
+arrange_ggsurvplots(g, print = TRUE,
+  ncol = 2, nrow = 3, risk.table.height = 0.4)
+# ggarrange(g1,g2,g3,g4,g5,
+#           ncol = 2, nrow = 3) %>% 
+#   annotate_figure(top=text_grob("Distribution of events over pairs of var",
+#                                 face="bold"))
+```
+
+Each pair of survival curves defined by different levels of the categorical variables have confidence intervals that overlaps, as it can be seen throw the fact that the red area and th e light blue one always overlap. This means that, from a descriptive point of view, these variables do not have effects on the answer. 
+
+
+```{r surv test, echo=FALSE}
+ss <- survdiff(Surv(TIME, Evento)~Gender+Smoking+Diabetes+BP+Anaemia, data=dat, rho=0)
+# ggsurvplot(surv_fit(Surv(TIME, Evento)~Gender+Smoking+Diabetes+BP+Anaemia, data=dat))
+df <- nrow(ss$var)-1
+
+```
+
+We can perform a general test to see if the combination of all these variables, together, has significant effect on the survival curve. 
+
+Before, we saw the comparison between survival curves of groups of people individuated by each of the factors, taken individually. From those graphs, we can notice that the lines generally does not intersect. Then, we can reasonably use a logarithmic rank test for the hypothesis that all the survival curves defined by all the combination of the possible values of the binomial variables are equal. The overall p-value of this test is `r pchisq(ss$chisq, df, lower.tail=F)`. That means that, even if individually the variables does not look to be very useful, their combination can be used to explain the behavior of the heart attacks among the population of interest. 
+
+To conclude, we can say that:
+* every the categorical variable does not seem to have impact on the event if individually considered,
+* the combination of all the categorical variables seems to have impact on the event.
+
+These results imply that, while doing variables selection and, in general, building our models, we will  have to pay attention in finding the set of variables which joints effect is explicative, even if the single ones are not.
+
+
+
+# FEATURES SELECTION
+
+
+## CPK and Creatinine
+
+In the previous analysis we saw that CPK and Creatinine are highly related.
+On the other hand, the correlation between the two is very low: $Cor_{Creatinine,CPK} =\\$ `r round(cor(dat$CPK, dat$Creatinine), 3)`
+
+```{r, include=FALSE, echo=FALSE}
+m1 <- glm(Event ~ CPK + Creatinine, dat=dat, family=binomial, )
+summary(m1)
+m2 <- glm(Event ~ CPK + I(CPK^2) + I(CPK^3) , dat=dat, family=binomial)
+summary(m2)
+
+r1 <- as.matrix(round(summary(m1)$coef[2:3,4],2))
+colnames(r1) <- "Pval"
+r2 <- as.matrix(round(summary(m2)$coef[2:4,4],2))
+colnames(r2) <- "Pval"
+```
+We applied a generalized linear model to see if the variables were useful if jointly used to explain the behavior of the Event variable. To look at this kind of linear dependence we have generated two models:
+
+* $logit(Event) = \beta_0 + \beta_1 CPK + \beta_2 Creatinine + \epsilon \\$
+* $logit(Event) = \beta_0 + \beta_1 CPK + \epsilon \\$
+
+The significance of the parameters of the first model is, respectively:
+`r r1`. It can be concluded that CPK can be dropped from this model. In our context, it means that CPK is not useful in inferring the Event of interest if combined with Creatinine.
+
+Before definitely discharging CPK as a variable for the  classification of the level of Event, we performed two other tests to see even over the linear dependency. In order to do that, we built the following model:
+$logit(Event) = \beta_0 + \beta_1 CPK + \beta_2 CPK^2 + \beta_3 CPK^3 + \epsilon \\$. All these coefficients where not significantly different from 0. In fact, their p-values are respectively:
+`r r2`.
+
+We then ddecided to discard the CPK variable.
+
+
+
+
+
+
+
+
+
+
+
