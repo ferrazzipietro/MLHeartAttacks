@@ -16,7 +16,7 @@ library(gridExtra)
 library(GGally)
 library(ggthemes) # Load
 library(ggpubr)
-setwd("~/Desktop/ML/ML-course-obesity")
+setwd("~/Desktop/ML/MLHeartAttacks")
 dat <- read.csv('Heart failure.csv', sep=";") #heart....
 dat <- dat %>% as_tibble()
 n <- nrow(dat)
