@@ -30,8 +30,8 @@ library(tidyverse)
 library(mlr)
 library(mlrCPO)
 
-setwd("~/Desktop/ML/MLHeartAttacks")
-# setwd("C:/Users/marit/OneDrive - Université Libre de Bruxelles/Bureau/BDMA/UPC/ML/PROJECT")
+# setwd("~/Desktop/ML/MLHeartAttacks")
+setwd("C:/Users/marit/OneDrive - Université Libre de Bruxelles/Bureau/BDMA/UPC/ML/PROJECT")
 data <- read.csv('Heart failure.csv', sep=";") #heart....
 data.table <- data
 data <- data %>% as_tibble()
@@ -971,7 +971,8 @@ The process through which we selected these variables was, as already mentioned,
 
 *  *Smoking* and *Gender*: the data is collected in Pakistan. It could be reasonable to think that there are not collected variables that could distinguish women that smoke from the ones that does not. For example, it could be that women that smoke are from specific social subgroups where other risky behaviors are more frequent than in the average men population (e.g., the women that smoke are western women with different habits from Pakistani people).
 
-*  *Gender* and *Pletelets*:???
+*  *Gender* and *Pletelets*: see Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors 
+Ranucci M, Aloisio T, Di Dedda U, Menicanti L, de Vincentiis C, et al. (2019) Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors. PLOS ONE 14(11): e0225771. https://doi.org/10.1371/journal.pone.0225771
 
 *  *Age* and *Ejection Fraction*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[11] `) for each more year of age. This result in completely aligned with experimental results (Chuang, Michael L et al. “Association of age with left ventricular volumes, ejection fraction and concentricity: the Framingham heart study.” Journal of Cardiovascular Magnetic Resonance vol. 15,Suppl 1 P264. 30 Jan. 2013, doi:10.1186/1532-429X-15-S1-P264).
 
@@ -1045,15 +1046,10 @@ data_surv_tot <- tot %>%
   add_column( Smoking_Gender = (tot$Smoking %>% as.numeric)  * (tot$Gender%>% as.numeric) ) %>%
   add_column( Smoking_Age = (tot$Smoking%>% as.numeric) * tot$Age) %>%
   add_column( Gender_Pletelets = (tot$Gender%>% as.numeric) * tot$Pletelets) %>%
-  add_column( Age_Ejection.Fraction = tot$Age * train$Ejection.Fraction) %>%
+  add_column( Age_Ejection.Fraction = tot$Age * tot$Ejection.Fraction) %>%
   add_column( Ejection.Fraction_Diabetes = tot$Ejection.Fraction * (tot$Diabetes%>% as.numeric)) %>%
   add_column( Ejection.Fraction_Creatinine = tot$Ejection.Fraction * tot$Creatinine) 
-
-data_surv_test <- data_surv_tot[-train.idxs,]
-data_surv_tot <- data_surv_tot[train.idxs,]
 ```
-
-
 
 
 # CLASSIFICATION
@@ -1117,12 +1113,12 @@ fv$data[order(-value)]
 
 
 ```{r, include = FALSE}
-data_classif <- data %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
+data_classif <- data %>% dplyr::select(Creatinine, Ejection.Fraction, Sodium, Event)
 
 classif_task <- makeClassifTask(id = "HeartFailure", data = data_classif, target = "Event", positive = 1)
 
 set.seed(1234)
-desc_inner <- makeResampleInstance("RepCV", reps = 2,  folds = 5, task = classif_task)
+desc_inner <- makeResampleInstance("RepCV", reps = 2,  folds = 4, task = classif_task)
 ```
 
 ```{r, warning = FALSE}
@@ -1195,7 +1191,7 @@ learners <- list(classif_lrn_glm, classif_lrn_naive, classif_lrn_knn, classif_lr
                  classif_lrn_neuralnet, classif_lrn_xgboost)
 
 library(parallelMap)
-parallelStartSocket(6) # start in socket mode and create 2 processes on localhost
+parallelStartSocket(2) # start in socket mode and create 2 processes on localhost
 
 set.seed(1234)
 bmr_classif <- benchmark(learners    = learners, 
@@ -1285,7 +1281,7 @@ ps <- makeModelMultiplexerParamSet(
                                  makeIntegerParam("nrounds", lower = 4, upper = 10), # Default is 
                                  makeIntegerParam("max_depth", lower = 3, upper = 10)), # Default is 6
   classif.neuralnet = makeParamSet(makeIntegerVectorParam("hidden", len = 1, lower = 5, upper = 10),
-                                   makeNumericParam("threshold", lower = 1, upper = 5, trafo = function(x) {10^x}),
+                                   makeNumericParam("threshold", lower = 2, upper = 5, trafo = function(x) {10^x}),
                                    makeNumericParam("stepmax", lower = 2, upper = 2, trafo = function(x) {10^x}))
 )
 
@@ -1307,7 +1303,7 @@ tuning <- makeTuneWrapper(learner = lrn,
 
 ```{r}
 # Parallelize model evaluation (it takes pretty long)
-parallelStartSocket(2) # start in socket mode and create 2 processes on localhost
+parallelStartSocket(5) # start in socket mode and create 2 processes on localhost
 
 set.seed(1234)
 results <- mlr::resample(learner = tuning, 
@@ -1366,6 +1362,22 @@ To help the algorithm converge when enlarging *hidden*, we need to make the *thr
 
 # Comparing tuned models
 
+```{r, message=FALSE, fig.height=4, fig.width=10}
+g <- ggplot(res_iters, aes(y=tpr.test.mean))
+
+
+bp9 <- g + geom_boxplot(aes(x=selected.learner))
+
+bp10 <- plotBMRBoxplots(bmr_classif, 
+                       measure   = timetrain, 
+                       order.lrn = getBMRLearnerIds(bmr_classif))  +
+                       aes(color = learner.id)
+
+# ggarrange(bp5, bp6, bp7, bp8, ncol = 2, nrow = 2, common.legend = TRUE, legend = "right")
+
+ggarrange(bp5, bp8, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+```
+
 ```{r}
 temp1 <- best_res %>% dplyr::select(selected.learner, tpr.test.mean)
 temp1
@@ -1388,7 +1400,7 @@ library(rattle)
 set.seed(1234)
 rpart_model <- rpart(Event ~., data = data_classif, control = list(minsplit = 32, maxdepth = 11))
 
-rpart.plot(rpart_model, under = TRUE, box.palette = "BuBn", branch.lty = 3, tweak = 1.1)
+plot(rpart_model, under = TRUE, box.palette = "BuBn", branch.lty = 3, tweak = 1.1)
 ```
 
 
