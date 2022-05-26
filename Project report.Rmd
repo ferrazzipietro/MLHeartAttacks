@@ -10,7 +10,7 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# setwd("~/Desktop/ML/MLHeartAttacks")
+setwd("~/Desktop/ML/MLHeartAttacks")
 ```
 
 ```{r,  include = FALSE, warning = FALSE, message = FALSE}
@@ -31,8 +31,8 @@ library(tidyverse)
 library(mlr)
 library(mlrCPO)
 
-# setwd("~/Desktop/ML/MLHeartAttacks")
-setwd("C:/Users/marit/OneDrive - Université Libre de Bruxelles/Bureau/BDMA/UPC/ML/PROJECT")
+setwd("~/Desktop/ML/MLHeartAttacks")
+#setwd("C:/Users/marit/OneDrive - Université Libre de Bruxelles/Bureau/BDMA/UPC/ML/PROJECT")
 data <- read.csv('Heart failure.csv', sep=";") #heart....
 data.table <- data
 data <- data %>% as_tibble()
@@ -41,12 +41,14 @@ n <- nrow(data)
 
 Two aricles where these data come from:
 
-1. Chicco, D., Jurman, G. Machine learning can predict survival of patients 
-with heart failure from serum creatinine and ejection fraction alone. 
-BMC Med Inform Decis Mak 20, 16 (2020). [DOI](https://doi.org/10.1186/s12911-020-1023-5)
+1.  Chicco, D., Jurman, G. Machine learning can predict survival of
+    patients with heart failure from serum creatinine and ejection
+    fraction alone. BMC Med Inform Decis Mak 20, 16 (2020).
+    [DOI](https://doi.org/10.1186/s12911-020-1023-5)
 
-2. Ahmad T, Munir A, Bhatti SH, Aftab M, Raza MA (2017) Survival analysis
-of heart failure patients: A case study. PLoS ONE 12(7): e0181001. [DOI](https://doi.org/10.1371/journal.pone.0181001)
+2.  Ahmad T, Munir A, Bhatti SH, Aftab M, Raza MA (2017) Survival
+    analysis of heart failure patients: A case study. PLoS ONE 12(7):
+    e0181001. [DOI](https://doi.org/10.1371/journal.pone.0181001)
 
 These are the data we have about the survavial from
 
@@ -55,9 +57,9 @@ data
 skim(data)
 ```
 
-*Gender*, *Smoking*, *Diabetes*, *BP* and *Anaemia* are factors that have been
-saved as numerical values. To start, we decided to transform them into
-categorical variables
+*Gender*, *Smoking*, *Diabetes*, *BP* and *Anaemia* are factors that
+have been saved as numerical values. To start, we decided to transform
+them into categorical variables
 
 ```{r echo=FALSE}
 data <- data%>% mutate(Event=as.factor(data$Event),
@@ -75,17 +77,17 @@ classification of the event and this problem, that requires survival
 models.
 
 Before starting looking at the data we randomly split it in one set for
-training and one for testing. We are splitting this two sets of data 
-with an 80-20 ratio. We want to use as much data as possible for training 
-since we have few instances, while being able to get a good estimation
-of the best model at the end of this analysis. We also make this split 
-stratified, which means keeping the proportion of positive cases in the
-subsamples as it appears in the full data set. We want our models to 
-learn the data as it is in reality, quite unbalanced. Splitting data
-in train and test will assure that the observations we will do during 
-the explorative analysis and the decisions that will be made on them 
-will not be biased by the knowledge acquired from the test set. 
-What follows is based on the training set.
+training and one for testing. We are splitting this two sets of data
+with an 80-20 ratio. We want to use as much data as possible for
+training since we have few instances, while being able to get a good
+estimation of the best model at the end of this analysis. We also make
+this split stratified, which means keeping the proportion of positive
+cases in the subsamples as it appears in the full data set. We want our
+models to learn the data as it is in reality, quite unbalanced.
+Splitting data in train and test will assure that the observations we
+will do during the explorative analysis and the decisions that will be
+made on them will not be biased by the knowledge acquired from the test
+set. What follows is based on the training set.
 
 ```{r, echo=FALSE, warning = FALSE}
 desc_outer <- makeResampleDesc("Holdout", split = 3/4, stratify = TRUE)
@@ -156,16 +158,15 @@ with *Event*=1 is only `{r} sum(data$Event==1)/n`. Even *Gender*,
 elements in the two levels for all these variables are enough to say
 that we are not in presence of rare classes.
 
-
 # !!!!!!!! Should we add here this?
 
-In the BMC article cited above, the conclusion is drawn that the 
-variables *Ejection.Fraction* and *Creatinine* are the best performers 
-when training the models. Therefore, we want to put special emphasis 
-on the correlation between these two predictors and the response 
-variable *Event*. Since these are numerical and the response variable 
-is continuous, we must perform a correlation test according to 
-these characteristics: Point-Biserial Correlation.
+In the BMC article cited above, the conclusion is drawn that the
+variables *Ejection.Fraction* and *Creatinine* are the best performers
+when training the models. Therefore, we want to put special emphasis on
+the correlation between these two predictors and the response variable
+*Event*. Since these are numerical and the response variable is
+continuous, we must perform a correlation test according to these
+characteristics: Point-Biserial Correlation.
 
 ```{r, echo = FALSE, message=FALSE, warning=FALSE}
 library(ltm)
@@ -173,18 +174,17 @@ cat("Biserial Correlation between Ejection.Fraction and Event is: ", biserial.co
 cat("Biserial Correlation between Ejection.Fraction and Event is: ", biserial.cor(train$Creatinine, train$Event))
 ```
 
-The fact that the two best predictors according to BMC article
-have a correlation with the response variable of approximately 0.3
-will make our predictions rather mediocre. This will be a clear 
-limitation in the project, because not only we have few instances
-available but now we encountered low correlations.
+The fact that the two best predictors according to BMC article have a
+correlation with the response variable of approximately 0.3 will make
+our predictions rather mediocre. This will be a clear limitation in the
+project, because not only we have few instances available but now we
+encountered low correlations.
 
 ## Time and factors
 
 An important aspect to consider is how the time under observation is
 related to the other variables. The following boxplots show that there
 is not relation between the time and the binomial variables.
-
 
 ```{r graphs2, echo=FALSE, fig.height = 4, fig.width = 8, fig.align = "center"}
 g <- ggplot(data, aes(y=TIME))
@@ -218,12 +218,12 @@ ggarrange(ggarrange(g2,g3,g4, ncol=3, nrow=1) ,ggarrange(g5,g6), ncol = 1, nrow 
 This result is interesting, since it tell us that the experiment from
 which the data has been collected is unbiased in respect of differences
 between the persons under observation. In other words, the selected
-people were kept under observation indipendently from the collected
+people were kept under observation independently from the collected
 variables that described themselves. It is important because it means
 that we can rely the way data has been collected and use it to provide
 results that will not be biased.
 
-We have to consider aside the boxplot about *TIME* in respect to the
+We have to consider aside the box plot about *TIME* in respect to the
 *Event*. It is clear that the time under observation for people that
 have presented an hart attack is lower than the the one of the ones that
 did not. As expected, this indicates that the heart attack looks to
@@ -245,7 +245,7 @@ g1 + theme(axis.text=element_text(size=8),
         legend.text =element_text(size=9))
 ```
 
-## Countinous variables vs Event or cathegorical variables
+## Continuous variables vs Event or categorical variables
 
 Then, we looked at the relation between the pairs of categorical and
 continuous variables, included the *Event.*
@@ -300,11 +300,11 @@ attack are generally more frequent in older people. For all the other
 variables, there is basically no difference between the groups.
 
 Some points are more than 1.5 times the interquartile distance far from
-the median, but thay are few and there is not enough evidence to
-consider them as outliers. Anyways, it is osmething that we should keep
+the median, but that are few and there is not enough evidence to
+consider them as outliers. Anyways, it is something that we should keep
 in mind.
 
-As expected, the youngest observed age is fourty.
+As expected, the youngest observed age is forty.
 
 ## Ejection Fraction vs factors
 
@@ -602,36 +602,8 @@ ggarrange(g1,g2,g3,g4,g5,g6,g7,g8,g9,g10,g11,g12,g13,g14,g15,
   annotate_figure(top=text_grob("Distribution of events over pairs of var", face="bold"))
 ```
 
-There are not natural clusters defined by these composition of variables.
-
-## Chategorical variables and Event
-
-An other interesting thing to see is if the binomial variables have impact over the Event. 
-To perform this check we dived in two groups defined by the levels of the factors, the people that had an heart attack while being under observation. 
-The results follow:
-
-# ADD HEATMAPS or HISROGRAMS
-
-```{r tables, echo=FALSE, fig.height = 3}
-eventYN <- as.factor(data$Event) 
-levels(eventYN)<- c("Yes", "No")
-pGender <- prop.table(table(Event=eventYN, Gender = data$Gender),2)
-pSmoke <- prop.table(table(Event=eventYN, smoking=data$Smoking),2)
-pDiab <- prop.table(table(Event=eventYN, Diabetes=data$Diabetes),2)
-pBP <- prop.table(table(Event=eventYN, BP=data$BP),2)
-pAnaemia <- prop.table(table(Event=eventYN, Anaemia=data$Anaemia),2)
-
-barplot( pGender[,1])
-barplot( pGender[,2])
-heatmap(pSmoke)
-heatmap(pDiab)
-image(pBP)
-m <- matrix(c(1,0.5,0.5,0.5), ncol=2)
-image(m)
-```
-
-These graph represent the proportions of people that have or have not experienced the *Event.* 
-The results show that the distribution of this variable is not influenced by the levels of the other categorical ones.
+There are not natural clusters defined by these composition of
+variables.
 
 ## Conclusions of the explorative analysis
 
@@ -659,8 +631,6 @@ certainly be the variable that will be used in the classification
 models, but it will help us in better understanding the nature of the
 case-study.
 
-# WHAT ABOUT OUTLIERS?
-
 # SURVIVAL ANALYSIS
 
 As said in the introduction to the data, this dataset has a specificity
@@ -672,7 +642,7 @@ considerations leaded us to use the traditional approach for data of
 this type, i.e. survival analysis. Our main idea is that this kind of
 approach will better explain the behavior of the data, leading us to a
 deeper comprehension of the relation between the variables and the
-*Event* and, most of all, to a beter choiche of the features to include
+*Event* and, most of all, to a better choice of the features to include
 in our classification models.
 
 ## Non-parametric analysis
@@ -698,26 +668,29 @@ g <- list()
 Evento <- as.numeric(levels(as.factor(data$Event)))[as.factor(data$Event)]
 data$Evento=Evento
 g[[1]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Gender, data=data),
-                 conf.int=T, pval.method=T, log.rank.weights="1", data=data)
+                 conf.int=T, pval.method=T, log.rank.weights="1", data=data, palette = c("navy","lightblue"), legend="none") + labs(x="Time", y="Survival for Gender")
 g[[2]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Smoking, data=data),
-                 conf.int=T, pval.method=T, log.rank.weights="1", data=data)
+                 conf.int=T, pval.method=T, log.rank.weights="1", data=data, palette = c("navy","lightblue"), legend="none") + labs(x="Time", y="Survival for Smoking")
 g[[3]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Diabetes, data=data),
-                 conf.int=T, pval.method=T, log.rank.weights="1", data=data)
+                 conf.int=T, pval.method=T, log.rank.weights="1", data=data, palette = c("navy","lightblue"), legend="none") + labs(x="Time", y="Survival for Diabetes")
 g[[4]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~BP, data=data),
-                 conf.int=T, pval.method=T, log.rank.weights="1", data=data)
+                 conf.int=T, pval.method=T, log.rank.weights="1", data=data, palette = c("navy","lightblue"), legend="none") + labs(x="Time", y="Survival for BP")
 g[[5]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Anaemia, data=data),
-                 conf.int=T, pval.method=T, log.rank.weights="1", data=data)
+                 conf.int=T, pval.method=T, log.rank.weights="1", data=data, palette = c("navy","lightblue"), legend="none") + labs(x="Time", y="Survival for Anaemia")
 arrange_ggsurvplots(g, print = TRUE,
-  ncol = 2, nrow = 3, risk.table.height = 0.4)
+  ncol = 3, nrow = 2, risk.table.height = 0.4)
 # ggarrange(g1,g2,g3,g4,g5,
 #           ncol = 2, nrow = 3) %>% 
 #   annotate_figure(top=text_grob("Distribution of events over pairs of var",
 #                                 face="bold"))
 ```
 
-Each pair of survival curves defined by different levels of the categorical variables have confidence intervals that overlaps, as it can be seen throw the fact that the red area and the light blue one always overlap. 
-This means that, from a descriptive point of view, these variables do not have effects on the answer. 
-This is in line with what we saw in the previous explorative analysis.
+Each pair of survival curves defined by different levels of the
+categorical variables have confidence intervals that overlaps, as it can
+be seen throw the fact that the red area and the light blue one always
+overlap. This means that, from a descriptive point of view, these
+variables do not have effects on the answer. This is in line with what
+we saw in the previous explorative analysis.
 
 ### Joint effect of the factors
 
@@ -737,7 +710,7 @@ intersect. On this base, we can reasonably use a *logarithmic rank test*
 for the hypothesis that all the survival curves defined by all the
 combination of the possible values of the binomial variables are equal.
 The overall p-value of this test is
-`{r} pchisq(ss$chisq, df, lower.tail=F)`. That means that, even if
+`r pchisq(ss$chisq, df, lower.tail=F)`. That means that, even if
 individually the variables does not look to be very useful, *their
 combination can be used to explain the behavior of the heart attacks
 among the population of interest* .
@@ -764,16 +737,14 @@ it well fit the data, extract conclusion from its output.
 It should be noticed that we are still working in a descriptive
 paradigm. Our scope is not to provide previsions on future observations,
 but only to understand, using the training set, which are the useful
-variables.
-
-We applied a Weibull model.
+variables. We applied a Weibull model.
 
 *WEIBULL MODEL*
 
 Assumption:
 
--   the residuals follows a Weibull distribution
-    (<https://en.wikipedia.org/wiki/Weibull_distribution>)
+-   the residuals follows a Weibull distribution \[wikipedia
+    reference\](<https://en.wikipedia.org/wiki/Weibull_distribution>)
 
 -   the risks of observing the event for different populations are
     proportional
@@ -784,16 +755,27 @@ Assumption:
 
 Model: $S(time)=e^{-\lambda time^ \alpha}$
 
-First, we trained the model with all the variables. The optimal starting model would be the one with all the possible interactions since we noticed in the previous non parametric analysis that some variables are ineffective if individually considered but could be important if jointly taken into account. Unfortunately, the small amount of data we have prevent us to apply the complete model. We will then manually adapt some  forward selection to individuate the useful features and discard the others. The selection is semiauthomatized based on the Akaike Information Criteria.
+First, we trained the model with all the variables. The optimal starting
+model would be the one with all the possible interactions since we
+noticed in the previous non parametric analysis that some variables are
+ineffective if individually considered but could be important if jointly
+taken into account. Unfortunately, the small amount of data we have
+prevent us to apply the complete model. We will then manually adapt some
+forward selection to individuate the useful features and discard the
+others. The selection is semiautomatic based on the Akaike Information
+Criteria.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, center=TRUE}
 exponential_survreg <- survreg(Surv(TIME,Event)~Gender+Smoking+Diabetes+BP+
                                  Anaemia+Age+Ejection.Fraction+Creatinine+Pletelets,
                                data=data.table, dist="weibull")
 summary(exponential_survreg)$table %>% round(2)
 ```
 
-The variables _Gender_, _Smoking_, _Diabetes_and _Pletelets_ are not significant for this model. Before discard them we tried, for each of them, to see if their interactions with the other variables are to be kept in the model.
+The variables *Gender*, *Smoking*, \_Diabetes_and *Pletelets* are not
+significant for this model. Before discard them we tried, for each of
+them, to see if their interactions with the other variables are to be
+kept in the model.
 
 ```{r, echo=FALSE}
 exponential_survreg <- survreg(Surv(TIME,Event)~
@@ -809,7 +791,7 @@ exponential_survreg <- survreg(Surv(TIME,Event)~
                                data=data.table, dist="weibull")
 final <- stepAIC(exponential_survreg, trace=0 )
 s <- summary(final)
-s$table %>% round(2)
+# s$table %>% round(2)
 ```
 
 The only significant ones are *Smoking:Gender* and *Smoking:Age*.
@@ -830,13 +812,10 @@ exponential_survreg <- survreg(Surv(TIME,Event)~
                                data=data.table, dist="weibull")
 final <- stepAIC(exponential_survreg, trace=0)
 s <- summary(final)
-s$table %>% round(2)
+#s$table %>% round(2)
 ```
 
-Given the interaction with *Pletelets*, *Gender* is now significant. It
-is then kept in the model.
-
-The same process has been applied for all the variables, obtaining the
+This process has been applied for all the variables, obtaining the
 following model:
 
 ```{r, echo=FALSE}
@@ -937,11 +916,14 @@ final <- survreg(Surv(TIME,Event)~
                                  Creatinine:Ejection.Fraction+
                                  Pletelets+Age+Diabetes+BP+Ejection.Fraction+Gender,
                                data=data.table, dist="weibull")
-summary(final)$table %>% row.names()
+# summary(final)$table %>% row.names()
 ```
 
-It has to be noticed that the scale parameter is not significantly far from 0. It means that the (easier) exponential model would be a better choice for this data. Based on this observation, we then decided to use it:
-$S(time)=e^{-\lambda time}$. The results in terms of variables to be kept are the same.
+It has to be noticed that the scale parameter is not significantly far
+from 0. It means that the (easier) exponential model would be a better
+choice for this data. Based on this observation, we then decided to use
+it: $S(time)=e^{-\lambda time}$. The results in terms of variables to be
+kept are the same.
 
 We then have the following model:
 
@@ -960,7 +942,17 @@ s <- summary(final)
 s$table[,c(1,4)] %>% round(2)
 ```
 
-Usual methodologies to asses the bounty of models are not appropriate for these family of models. In fact, usually there is no the concept of time under observation to be taken into account. This exponential model, on the other hand, deal with that time. For this reason, we performed the assessment of the fit of the final model using the *Cox-Snell residuals*. The approach allowed us to verify about correctness of the distribution assumptions. The idea is that the relation between these residuals and the logaritm of the cumulative hazard ratio  estimated using the Fleming-Harrington method is linear. We then plotted these two variables obtaining a confirm about this linear relation. It means the the assumption of exponential distribution is quite fine.
+Usual methodologies to asses the bounty of models are not appropriate
+for these family of models. In fact, usually there is no the concept of
+time under observation to be taken into account. This exponential model,
+on the other hand, deal with that time. For this reason, we performed
+the assessment of the fit of the final model using the *Cox-Snell
+residuals*. The approach allowed us to verify about correctness of the
+distribution assumptions. The idea is that the relation between these
+residuals and the logaritm of the cumulative hazard ratio estimated
+using the Fleming-Harrington method is linear. We then plotted these two
+variables obtaining a confirm about this linear relation. It means the
+the assumption of exponential distribution is quite fine.
 
 ```{r, echo=FALSE}
 y_pred= predict(final, na.action = "na.omit", type="linear")
@@ -970,46 +962,75 @@ Sres = survfit(Surv(rS,data.table$Event)~1, ctype=2 ) # "fleming-harrington"
 plot(rSo,log(-log(Sres$surv)), xlim=c(-7,1),
      xlab="Cox-Snell residuals", 
      ylab="Log of Cumulative Lazard",
-     main="Bounty of the Final Survival Model")
-abline(0,1, col=2, lwd=3)
+     main="Bounty of the Final Survival Model",
+     col = "navy",
+     pch=19,
+     cex=0.7)
+abline(0,1, lwd=3, col="lightblue")
 ```
 
-The process through which we selected these variables was, as already mentioned, purely based on the AIC. It leaded to a model were there are iterations of terms that are not individually present. In order to increment the interpretability of the results, we decided to add those variables anyways.
-
+The process through which we selected these variables was, as already
+mentioned, purely based on the AIC. It leaded to a model were there are
+iterations of terms that are not individually present. In order to
+increment the interpretability of the results, we decided to add those
+variables anyways.
 
 # CHECK IF MY IDEAS MAKE SENSE
 
 ### Meaning of these interactions
 
-*  *Smoking* and *Gender*: the data is collected in Pakistan. It could be reasonable to think that there are not collected variables that could distinguish women that smoke from the ones that does not. For example, it could be that women that smoke are from specific social subgroups where other risky behaviors are more frequent than in the average men population (e.g., the women that smoke are western women with different habits from Pakistani people).
+-   *Smoking* and *Gender*: the data is collected in Pakistan. It could
+    be reasonable to think that there are not collected variables that
+    could distinguish women that smoke from the ones that does not. For
+    example, it could be that women that smoke are from specific social
+    subgroups where other risky behaviors are more frequent than in the
+    average men population (e.g., the women that smoke are western women
+    with different habits from Pakistani people).
 
-*  *Gender* and *Pletelets*: see Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors 
-Ranucci M, Aloisio T, Di Dedda U, Menicanti L, de Vincentiis C, et al. (2019) Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors. PLOS ONE 14(11): e0225771. [DOI](https://doi.org/10.1371/journal.pone.0225771)
+-   *Gender* and *Pletelets*: see Gender-based differences in platelet
+    function and platelet reactivity to P2Y12 inhibitors Ranucci M,
+    Aloisio T, Di Dedda U, Menicanti L, de Vincentiis C, et al. (2019)
+    Gender-based differences in platelet function and platelet
+    reactivity to P2Y12 inhibitors. PLOS ONE 14(11): e0225771.
+    [DOI](https://doi.org/10.1371/journal.pone.0225771)
 
-*  *Age* and *Ejection Fraction*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[11] `) for each more year of age. This result in completely aligned with experimental results (Chuang, Michael L et al. “Association of age with left ventricular volumes, ejection fraction and concentricity: the Framingham heart study.” Journal of Cardiovascular Magnetic Resonance vol. 15,Suppl 1 P264. 30 Jan. 2013, [DOI](https://doi.org/10.1186/1532-429X-15-S1-P264).
+-   *Age* and *Ejection Fraction*: the increment of the ejection
+    fraction leads to a decrease of the survival ratio (of
+    `r final$coef[11]`) for each more year of age. This result in
+    completely aligned with experimental results (Chuang, Michael L et
+    al. "Association of age with left ventricular volumes, ejection
+    fraction and concentricity: the Framingham heart study." Journal of
+    Cardiovascular Magnetic Resonance vol. 15,Suppl 1 P264. 30 Jan.
+    2013, [DOI](https://doi.org/10.1186/1532-429X-15-S1-P264).
 
-*  *Ejection Fraction* and *Diabetes*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[12] `) for people with diabetes. This is out of the range of our knoweldge and after some research we were able to say that this is still an open issue (Ehl NF, Kühne M, Brinkert M, Müller-Brand J, Zellweger MJ. Diabetes reduces left ventricular ejection fraction--irrespective of presence and extent of coronary artery disease. Eur J Endocrinol. 2011 Dec;165(6):945-51. [doi](https://doi.org/10.1530/EJE-11-0687) Epub 2011 Sep 8. PMID: 21903896.)
+-   *Ejection Fraction* and *Diabetes*: the increment of the ejection
+    fraction leads to a decrease of the survival ratio (of
+    `r final$coef[12]`) for people with diabetes. This is out of the
+    range of our knoweldge and after some research we were able to say
+    that this is still an open issue (Ehl NF, Kühne M, Brinkert M,
+    Müller-Brand J, Zellweger MJ. Diabetes reduces left ventricular
+    ejection fraction--irrespective of presence and extent of coronary
+    artery disease. Eur J Endocrinol. 2011 Dec;165(6):945-51.
+    [doi](https://doi.org/10.1530/EJE-11-0687) Epub 2011 Sep 8. PMID:
+    21903896.)
 
-* *Ejection Fraction* and *Creatinine*: the same as before.
-
+-   *Ejection Fraction* and *Creatinine*: the same as before.
 
 ## CPK and Creatinine
 
-1)  In the previous analysis we saw that _CPK_ and _Creatinine_ are highly
-related. On the other hand, the correlation between the two is very low:
-$Cor_{Creatinine,CPK} =\\$ `r round(cor(data$CPK, data$Creatinine), 3)`.
+1)  In the previous analysis we saw that *CPK* and *Creatinine* are
+    highly related. On the other hand, the correlation between the two
+    is very low: \$Cor\_{Creat,CPK} =\\\\\$
+    `r round(cor(data$CPK, data$Creatinine), 3)`.
 
+2)  The explorative analysis showed that *CPK* doesn't seem useful to
+    classify the *Event*.
 
-2)  The explorative analysis showed that _CPK_ doesn't seem useful to classify the _Event_.
+3)  In addition, we just saw that it is not even founded to be used
+    neither using the Kaplain-Meyer methor nor the Exponential models.
 
-
-3)  In addition, we just saw that it is not even founded to be used neither using the Kaplain-Meyer methor nor
-
-
-4)  the Exponential models.
-
-
-5)  Furthermore, we applied a generalized linear model with only _CPK_ and _Creatinine_ to explain the _Event_.
+4)  Furthermore, we applied a generalized linear model with only *CPK*
+    and *Creatinine* to explain the *Event*.
 
 ```{r, include=FALSE, echo=FALSE}
 m1 <- glm(Event ~ CPK + Creatinine, data=data, family=binomial, )
@@ -1023,15 +1044,15 @@ r2 <- as.matrix(round(summary(m2)$coef[2:4,4],2))
 colnames(r2) <- "Pval"
 ```
 
-The scope was to answer the question if both variables were
-useful if jointly used to (linearly) classify the Event. To
-look at this kind of linear dependence we have generated two models:
+The scope was to answer the question if both variables were useful if
+jointly used to (linearly) classify the Event. To look at this kind of
+linear dependence we have generated two models:
 
 -   $logit(Event) = \beta_0 + \beta_1 CPK + \beta_2 Creatinine + \epsilon \\$
 -   $logit(Event) = \beta_0 + \beta_1 CPK + \epsilon \\$
 
-The significances of the parameters of the first model are, respectively:
-`r r1`. 
+The significances of the parameters of the first model are,
+respectively: `r r1`.
 
 Before definitely discharging CPK as a variable for the classification
 of the level of Event, we performed two other tests to see even over the
@@ -1040,16 +1061,20 @@ $logit(Event) = \beta_0 + \beta_1 CPK + \beta_2 CPK^2 + \beta_3 CPK^3 + \epsilon
 All these coefficients where not significantly different from 0. In
 fact, their p-values are respectively: `r r2`.
 
-On the basis of these 5 different approaches the gave all the same result we decided to drop _CPK_ can be dropped for our dataset. In our context, it means that CPK is not considered useful in inferring the _Event_ of interest if combined with _Creatinine._
-
-
+On the basis of these 5 different approaches the gave all the same
+result we decided to drop *CPK* can be dropped for our dataset. In our
+context, it means that CPK is not considered useful in inferring the
+*Event* of interest if combined with *Creatinine.*
 
 ### Conclusions
 
-In conclusion, it can be said that the variables that significantly directly impact the mortality curves are *Pletelets*, *Age*, *Diabetes*, *BP*, *Ejection.Fraction* and *Gender*. *Smoking1* and *Creatinine* have impact only if combined with some of the others. Relying of these results, we can create some new features on the top of the original ones. 
-More precisely, we are generating new features representing the iterations that were founded as significant by the Exponential model.
-
-
+In conclusion, it can be said that the variables that significantly
+directly impact the mortality curves are *Pletelets*, *Age*, *Diabetes*,
+*BP*, *Ejection.Fraction* and *Gender*. *Smoking1* and *Creatinine* have
+impact only if combined with some of the others. Relying of these
+results, we can create some new features on the top of the original
+ones. More precisely, we are generating new features representing the
+iterations that were founded as significant by the Exponential model.
 
 ```{r, echo=FALSE}
 data_surv_tot <- tot %>%
@@ -1063,40 +1088,58 @@ data_surv_tot <- tot %>%
   add_column( Ejection.Fraction_Creatinine = tot$Ejection.Fraction * tot$Creatinine) 
 ```
 
-
 # CLASSIFICATION
 
 # MLR package
 
-We will be using R package *mlr* as a framework. It follows the following pattern:
+We will be using R package *mlr* as a framework. It follows the
+following pattern:
 
-1. Define task: what will be predicted and any consideration given the data to be used (e.g. partitioning)
-2. Create learner: which ML algorithm will be used, as well as hyperparameters, preprocessing, etc.
-3. Determine resample and measure: which validation strategy will be followed and which metric will be used.
-4. Train the model
-5. Predict and obtain model accuracy
+1.  Define task: what will be predicted and any consideration given the
+    data to be used (e.g. partitioning)
+2.  Create learner: which ML algorithm will be used, as well as
+    hyperparameters, preprocessing, etc.
+3.  Determine resample and measure: which validation strategy will be
+    followed and which metric will be used.
+4.  Train the model
+5.  Predict and obtain model accuracy
 
-In our case, since there are many models that we want to apply, we will be doing a benchmark before actually training. This will give us a glimpse of the accuracies that these methods would get. After that, we will be tuning hyperparameters in the best performing models.
-
+In our case, since there are many models that we want to apply, we will
+be doing a benchmark before actually training. This will give us a
+glimpse of the accuracies that these methods would get. After that, we
+will be tuning hyperparameters in the best performing models.
 
 ## Creating the task and Validation partitioning
 
-###### k-Fold-Cross-Validation
-If the sample size is small, it is recommended to use repeated k-Fold-Cross-Validation, as it achieves a good bias-variance balance and, given that there are not many observations, the computational cost is not excessive. (In other words, you could even do a high number of folds because it will take little time). For instance, in our benchmark we will use 5 folds with 10 reps, which is not equivalent to 50-folds-cross-validation. The issue with partitioning data with few instances is that results may depend on luck. That's why we are considering 10 different partitions with 5 folds, so results will not depend on chance, but the average will be closer to reality.
+K-Fold-Cross-Validation
 
+If the sample size is small, it is recommended to use repeated
+k-Fold-Cross-Validation, as it achieves a good bias-variance balance
+and, given that there are not many observations, the computational cost
+is not excessive. (In other words, you could even do a high number of
+folds because it will take little time). For instance, in our benchmark
+we will use 5 folds with 10 reps, which is not equivalent to
+50-folds-cross-validation. The issue with partitioning data with few
+instances is that results may depend on luck. That's why we are
+considering 10 different partitions with 5 folds, so results will not
+depend on chance, but the average will be closer to reality.
 
 # Machine Learning Analysis
 
 CHANGE THIS !!!
 
-Why mlrCPO  [Reference](https://www.rdocumentation.org/packages/mlrCPO/versions/0.3.4/topics/mlrCPO-package)
+Why mlrCPO
+[Reference](https://www.rdocumentation.org/packages/mlrCPO/versions/0.3.4/topics/mlrCPO-package)
 
-Basically you define a pipeline using the mlrCPO pipeop %>>%. 
-Every pipeop you put before the learner will be applied directly before the training but after the train test split.
+Basically you define a pipeline using the mlrCPO pipeop %>\>%. Every
+pipeop you put before the learner will be applied directly before the
+training but after the train test split.
 
 ## Classification Analysis
 
-We will not consider the variable *Time* from now on because it would not be information that we would obtain from a new patient, it is only a control variable.
+We will not consider the variable *Time* from now on because it would
+not be information that we would obtain from a new patient, it is only a
+control variable.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 data_classif <- as.data.frame(data) %>% dplyr::select(-TIME) %>%
@@ -1108,7 +1151,7 @@ set.seed(1234)
 desc_inner <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = classif_task, stratify = TRUE)
 ```
 
-```{r, warning = FALSE, echo=FALSE}
+```{r, warning = FALSE, echo=FALSE, message=FALSE}
 # https://mlr.mlr-org.com/articles/tutorial/integrated_learners.html
 
 classif_measures <- list(tpr, timetrain)
@@ -1153,10 +1196,6 @@ classif_lrn_ranger <- classif_pipeline %>>% classif_lrn_ranger
 classif_lrn_SVM <- makeLearner("classif.svm", id = "SVM", predict.type = "prob")
 classif_lrn_SVM <- classif_pipeline %>>% classif_lrn_SVM
 
-## Ada Boosting ##
-# library(ada)
-# classif_lrn_ada <- makeLearner("classif.ada", id = "ada", predict.type = "prob")
-# classif_lrn_ada <- classif_pipeline %>>% classif_lrn_ada
 
 ## Neural Net ##
 # library(neuralnet)
@@ -1186,7 +1225,7 @@ bmr_classif
 parallelStop()
 ```
 
-### Filter Selection 
+### Filter Selection
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 data_fs <- train %>% dplyr::select(-TIME)
@@ -1194,49 +1233,49 @@ data_fs <- train %>% dplyr::select(-TIME)
 fs_task <- makeClassifTask(id = "HeartFailure", data = data_fs, target = "Event", positive = 1)
 ```
 
-In order to decide which features would be selected to see if 
-they help the models get better predictions, we will perform
-filter selection. Unlike feature selection, this method does not
-require of a learner to reach a conclusion. We have checked that
-depending on the learner selected, results change drastically.
-Filter selection was found to be a more impartial methodology.
+In order to decide which features would be selected to see if they help
+the models get better predictions, we will perform filter selection.
+Unlike feature selection, this method does not require of a learner to
+reach a conclusion. We have checked that depending on the learner
+selected, results change drastically. Filter selection was found to be a
+more impartial methodology.
 
-The metric used for this filter selection is *Information Gain*. 
-It measures the reduction in entropy (or surprise) by splitting 
-a dataset according to a given value of a random variable. 
-A larger information gain suggests a lower entropy group or 
-groups of samples, and hence less surprise. [Reference](https://machinelearningmastery.com/information-gain-and-mutual-information/) 
+The metric used for this filter selection is *Information Gain*. It
+measures the reduction in entropy (or surprise) by splitting a dataset
+according to a given value of a random variable. A larger information
+gain suggests a lower entropy group or groups of samples, and hence less
+surprise.
+[Reference](https://machinelearningmastery.com/information-gain-and-mutual-information/)
 
-Entropy quantifies how much information there is in a random 
-variable, or more specifically its probability distribution. 
-A skewed distribution has a low entropy, whereas a distribution 
-where events have equal probability has a larger entropy.
+Entropy quantifies how much information there is in a random variable,
+or more specifically its probability distribution. A skewed distribution
+has a low entropy, whereas a distribution where events have equal
+probability has a larger entropy.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, messagge=FALSE}
 library(FSelectorRcpp)
 fv <- generateFilterValuesData(fs_task, method = "FSelectorRcpp_information.gain")
-plotFilterValues(fv, feat.type.cols = TRUE) + ggpubr::theme_pubr() + 
+plotFilterValues(fv, feat.type.cols = TRUE) + scale_fill_brewer(palette="Blues") + ggpubr::theme_pubr() + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   ggtitle("Filter Selection \n Information Gain")
 
 fv$data[order(-value)]
 ```
 
-We saw in the BMC article that one of their conclusions was: 
-"Our results of these two-feature models show not only that 
-*serum creatinine* and *ejection fraction* are sufficient to 
-predict survival of heart failure patients from medical 
-records, but also that using these two features alone can 
-lead to more accurate predictions than using the original 
-data set features in its entirety."
+We saw in the BMC article that one of their conclusions was: "Our
+results of these two-feature models show not only that *serum
+creatinine* and *ejection fraction* are sufficient to predict survival
+of heart failure patients from medical records, but also that using
+these two features alone can lead to more accurate predictions than
+using the original data set features in its entirety."
 
-Therefore, considering the results obtained, the conclusions 
-of the previous analysis, and that the correlation between 
-the response variable and Sodium is approximately 0.2, we 
-have decided to use only *serum creatinine* and 
-*ejection fraction* for the comparison of results.
+Therefore, considering the results obtained, the conclusions of the
+previous analysis, and that the correlation between the response
+variable and Sodium is approximately 0.2, we have decided to use only
+*serum creatinine* and *ejection fraction* for the comparison of
+results.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, messagge=FALSE}
 data_fs <- data %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
 
 fs_task <- makeClassifTask(id = "HeartFailure", data = data_fs, target = "Event", positive = 1)
@@ -1268,34 +1307,67 @@ parallelStop()
 bp1 <- plotBMRBoxplots(bmr_classif, 
                        measure   = tpr, 
                        order.lrn = getBMRLearnerIds(bmr_classif))  +
-       aes(color = learner.id)  +
-       labs(x = "", y = "True Positive Rate")
+       aes(fill = learner.id)  +
+       labs(x = "", y = "True Positive Rate") + scale_fill_brewer(palette="Blues")
 
 bp3 <- plotBMRBoxplots(bmr_fs, 
                        measure   = tpr, 
                        order.lrn = getBMRLearnerIds(bmr_classif))  +
-       aes(color = learner.id)  +
-       labs(x = "", y = "True Positive Rate (FSel)")
+       aes(fill = learner.id)  +
+       labs(x = "", y = "True Positive Rate (FSel)") + scale_fill_brewer(palette="Blues")
 
 ggarrange(bp1, bp3, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
 
-Here, our aim is to maximize *TPR*, because in the medical area it is better to have false alarms (overestimating positives) than not predicting real positives. Some models may have a good accuracy (even better than other models), but that is not the priority in healthcare analysis (such as predicting cancer and other diseases). For instance, a trivial model (e.g. predicting all patients as class 0), would give very high accuracies, not taking into account any of the data provided. That's why we will decide which model is better based on *TPR* (true positive rate). 
+Here, our aim is to maximize *TPR*, because in the medical area it is
+better to have false alarms (overestimating positives) than not
+predicting real positives. Some models may have a good accuracy (even
+better than other models), but that is not the priority in healthcare
+analysis (such as predicting cancer and other diseases). For instance, a
+trivial model (e.g. predicting all patients as class 0), would give very
+high accuracies, not taking into account any of the data provided.
+That's why we will decide which model is better based on *TPR* (true
+positive rate).
 
-In this stage, we would like to decide whether we use the whole dataset or the subset obtained selecting some features. From the results we can comment on three main points:
+In this stage, we would like to decide whether we use the whole dataset
+or the subset obtained selecting some features. From the results we can
+comment on three main points:
 
-* Weak learners perform visibly worse, some of them even reaching a tpr of around 0.2 
+-   Weak learners perform visibly worse, some of them even reaching a
+    tpr of around 0.2.
 
-* K-nearest neighbor performs surprisingly better when selecting few features. This can be explained because the algorithm does not work well with high dimensions. Performance changed from 0.3 to 0.6, with a default of 7 neighbors. Support Vector Machine also benefits from less features.
+-   K-nearest neighbor performs surprisingly better when selecting few
+    features. This can be explained because the algorithm does not work
+    well with high dimensions. Performance changed from 0.3 to 0.6, with
+    a default of 7 neighbors. Support Vector Machine also benefits from
+    less features.
 
-* Lastly, we see that overall models perform slightly better with the feature selection. However, results vary much more depending on the partition. In view of the results, we decide to perform tuning for both datasets using a subset of the best performing learners. We will be tuning mainly "strong learners" (i.e. excluding *glm*, *naive bayes*) as well as *SVM*, because we believe they will be able to discard useless features and reach better performances while being consistent, not fluctuating much.
+-   Lastly, we see that overall models perform slightly better with the
+    feature selection. However, results vary much more depending on the
+    partition. In view of the results, we decide to perform tuning for
+    both datasets using a subset of the best performing learners. We
+    will be tuning mainly "strong learners" (i.e. excluding *glm*,
+    *naive bayes*) as well as *SVM*, because we believe they will be
+    able to discard useless features and reach better performances while
+    being consistent, not fluctuating much.
 
-For now, we should mention that *rpart* (tree) is accomplishing good results, and would be convenient for this project since it is easy to explain.
-
+For now, we should mention that *rpart* (tree) is accomplishing good
+results, and would be convenient for this project since it is easy to
+explain.
 
 ### Tuning models
 
-In this section, we are going to tune different hyperparameters for the following models: kknn, rpart, random forest, ranger, extreme gradient boosting, and neural network. Below we will explain the reasoning behind selecting each parameter. The same validation method as for the previous analysis will be used, i.e. Repeated Cross Validation with 2 folds and 5 iterations. For the hyperparameter optimization, random search will be executed. It is shown to be more efficient in a paper by Bergstra, J. and Bengio, Y. (2012).[Reference](https://www.jmlr.org/papers/volume13/bergstra12a/bergstra12a.pdf). A total of 200 iterations will be splitted among the 7 learners chosen for tuning.
+In this section, we are going to tune different hyperparameters for the
+following models: kknn, rpart, random forest, ranger, extreme gradient
+boosting, and neural network. Below we will explain the reasoning behind
+selecting each parameter. The same validation method as for the previous
+analysis will be used, i.e. Repeated Cross Validation with 2 folds and 5
+iterations. For the hyperparameter optimization, random search will be
+executed. It is shown to be more efficient in a paper by Bergstra, J.
+and Bengio, Y.
+(2012).[Reference](https://www.jmlr.org/papers/volume13/bergstra12a/bergstra12a.pdf).
+A total of 200 iterations will be splitted among the 7 learners chosen
+for tuning.
 
 ```{r, message = FALSE, echo=FALSE}
 bls <- list(makeLearner("classif.kknn"),
@@ -1353,33 +1425,37 @@ tuning_results_fs <- tuneParams(learner = lrn,
 parallelStop()
 ```
 
-
 ```{r, fig.height=4, fig.width=12, echo=FALSE}
 #Check results
 res_iters_all <- getTuneResultOptPath(tuning_results_all)
 t_all <- res_iters_all %>% dplyr::select(selected.learner, tpr.test.mean)
 
 p_all <- ggplot(t_all, aes(tpr.test.mean, selected.learner)) + 
-         geom_boxplot(aes(color = selected.learner))  + 
-         labs(x = "True Positive Rate", y = "")
+         geom_boxplot(aes(fill = selected.learner))  + 
+         labs(x = "True Positive Rate", y = "") + scale_fill_brewer(palette="Blues")
 
 
 res_iters_fs <- getTuneResultOptPath(tuning_results_fs)
 t_fs <- res_iters_fs %>% dplyr::select(selected.learner, tpr.test.mean)
 
 p_fs <- ggplot(t_fs, aes(tpr.test.mean, selected.learner)) + 
-         geom_boxplot(aes(color = selected.learner))  + 
-         labs(x = "True Positive Rate (FSel)", y = "")
+         geom_boxplot(aes(fill = selected.learner))  + 
+         labs(x = "True Positive Rate (FSel)", y = "") + scale_fill_brewer(palette="Blues")
 
 
 ggarrange(p_all, p_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
 
-Finally, based on these graphs we can conclude that selecting few features is essential for this study. Excluding *neuralnet*, that clearly fails for this data set, all models are consistent in the right-side graph. The two bagging models (*ranger* and *randomForest*) get equivalent results, so one of these two should be used in the final model.
+Finally, based on these graphs we can conclude that selecting few
+features is essential for this study. Excluding *neuralnet*, that
+clearly fails for this data set, all models are consistent in the
+right-side graph. The two bagging models (*ranger* and *randomForest*)
+get equivalent results, so one of these two should be used in the final
+model.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # Obtaining best iteration for each learner (selecting features)
-best_res <- res_iters_fs %>% group_by(selected.learner) %>% slice(which.max(tpr.test.mean)) %>% 
+best_res <- res_iters_fs %>% group_by(selected.learner) %>% slice(which.max(tpr.test.mean)) %>%
             relocate(tpr.test.mean, .after = selected.learner)
 library(reshape)
 options(scipen=999)
@@ -1396,45 +1472,76 @@ rm(temp, tpr.test, hyperparam)
 tuning_res
 ```
 
-
 #### Explanation of parameters
 
-* RPART
-For the model *rpart* we are tuning two of the "stopping" parameters in the algorithm, that tells the tree when to stop growing (a way of pruning)
-  + *minsplit*: minimum number of observations that must exist in a node in order for a split to be attempted. If it is too small, the tree will keep growing and probably lead to overfitting, if it is too big the accuracy may decrease.
-  + *maxdepth*: Set the maximum depth of any node of the final tree, with the root node counted as depth 0. Again, if we let the tree make too many splits, it will lead to overfitting. A tree that is too small may generalize too much.
+-   RPART For the model *rpart* we are tuning two of the "stopping"
+    parameters in the algorithm, that tells the tree when to stop
+    growing (a way of pruning)
 
-* RANDOM FOREST
-  + *ntree*: this should not be set to too small a number, to ensure that every input row gets predicted at least a few times.
-  + *mtry*: number of variables to possibly split at in each node. (Cannot be bigger than the number of variables).
-  + *nodesize*: Setting this number larger causes smaller trees to be grown (and thus preventing from overfitting and takes less time)
+    -   *minsplit*: minimum number of observations that must exist in a
+        node in order for a split to be attempted. If it is too small,
+        the tree will keep growing and probably lead to overfitting, if
+        it is too big the accuracy may decrease.
+    -   *maxdepth*: Set the maximum depth of any node of the final tree,
+        with the root node counted as depth 0. Again, if we let the tree
+        make too many splits, it will lead to overfitting. A tree that
+        is too small may generalize too much.
 
-* RANGER
-Same parameters as in random forest, since it's the same algorithm, just optimized.
+-   RANDOM FOREST
 
-* SVM
-  + *cost*: is the penalty parameter, which represents misclassification or error term. If it's smaller, the decision boundary will have a big margin, resulting in more missclassified data. If it's bigger, the penalty is higher and the algorithm tries to minimize missclassifications.
-  + *gamma*: large gamma values will probably lead to overfitting. Small values will generalize too much.
+    -   *ntree*: this should not be set to too small a number, to ensure
+        that every input row gets predicted at least a few times.
+    -   *mtry*: number of variables to possibly split at in each node.
+        (Cannot be bigger than the number of variables).
+    -   *nodesize*: Setting this number larger causes smaller trees to
+        be grown (and thus preventing from overfitting and takes less
+        time)
 
-* ADA
-  + *nu*: This parameter is provided to shrink the contribution of each classifier, sometimes called learning rate. Reducing this parameter will mean the weights will be increased or decreased to a small degree, forcing the model train slower, although sometimes results in better performance scores.
-  + *iter*: number of boosting iterations to perform (total number of weak learners).
+-   RANGER Same parameters as in random forest, since it's the same
+    algorithm, just optimized.
 
-* XGBOOST
-  + *eta*: control the learning rate. Used to prevent overfitting by making the boosting process more conservative.
-  + *nrounds*: max number of boosting iterations.
-  + *max_depth*: maximum depth of a tree
+-   SVM
 
-* NEURALNET
-  + *hidden*: hidden neurons, for each layer (only one layer in our case since it will make it faster obtaining very good results)
-To help the algorithm converge when enlarging *hidden*, we need to make the *threshold* and *stepmax* bigger as well.
-  + *threshold*: threshold for the partial derivatives of the error function as stopping criteria.
-  + *stepmax*: maximum steps for the training of the neural network, if we make it bigger, we let more time for the algorithm to converge.
+    -   *cost*: is the penalty parameter, which represents
+        misclassification or error term. If it's smaller, the decision
+        boundary will have a big margin, resulting in more
+        missclassified data. If it's bigger, the penalty is higher and
+        the algorithm tries to minimize missclassifications.
+    -   *gamma*: large gamma values will probably lead to overfitting.
+        Small values will generalize too much.
 
+-   ADA
+
+    -   *nu*: This parameter is provided to shrink the contribution of
+        each classifier, sometimes called learning rate. Reducing this
+        parameter will mean the weights will be increased or decreased
+        to a small degree, forcing the model train slower, although
+        sometimes results in better performance scores.
+    -   *iter*: number of boosting iterations to perform (total number
+        of weak learners).
+
+-   XGBOOST
+
+    -   *eta*: control the learning rate. Used to prevent overfitting by
+        making the boosting process more conservative.
+    -   *nrounds*: max number of boosting iterations.
+    -   *max_depth*: maximum depth of a tree
+
+-   NEURALNET
+
+    -   *hidden*: hidden neurons, for each layer (only one layer in our
+        case since it will make it faster obtaining very good results)
+        To help the algorithm converge when enlarging *hidden*, we need
+        to make the *threshold* and *stepmax* bigger as well.
+    -   *threshold*: threshold for the partial derivatives of the error
+        function as stopping criteria.
+    -   *stepmax*: maximum steps for the training of the neural network,
+        if we make it bigger, we let more time for the algorithm to
+        converge.
 
 ### Test result
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # The outer partitioning was defined in the beginning of the document, we just have to update the preprocess of the data
 final_data <- as.data.frame(tot) %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
 desc_outer <- makeResampleDesc("Holdout", split = 3/4, stratify = TRUE)
@@ -1444,7 +1551,8 @@ set.seed(1234)
 partition_outer <- makeResampleInstance(desc_outer, final_task) 
 
 
-prueba_learner <- makeLearner("classif.randomForest", mtry = 1, ntree = 266, nodesize = 45)
+#prueba_learner <- makeLearner("classif.randomForest", mtry = 1, ntree = 266, nodesize = 45)
+prueba_learner <- makeLearner("classif.randomForest")
 # prueba_learner <- makeLearner("classif.ranger", mtry = 1, num.trees = 45, min.node.size = 25)
 
 set.seed(1234)
@@ -1456,12 +1564,16 @@ prueba_results <- resample(learner = prueba_learner,
                     show.info = TRUE)
 ```
 
+## Survival Analysis
 
-## SUrvival Analysis
+In this section we want to do a comparison of two different approaches,
+statistic-based and generic classification. To do so, we have
+independently chosen the most important features given by each approach,
+and we will be performing the same machine learning analysis to see
+which gets a higher true positive rate. Every parameter (e.g. validation
+methodology, search space) will be the same as the previous analysis.
 
-In this section we want to do a comparison of two different approaches, statistic-based and generic classification. To do so, we have independently chosen the most important features given by each approach, and we will be performing the same machine learning analysis to see which gets a higher true positive rate. Every parameter (e.g. validation methodology, search space) will be the same as the previous analysis.
-
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 data_surv <- as.data.frame(data_surv_tot[train.idxs,]) %>% mutate_at(vars(Gender, Smoking, Diabetes, BP), as.numeric) 
 surv_task <- makeClassifTask(id = "HeartFailure", data = data_surv, target = "Event", positive = 1)
 
@@ -1471,7 +1583,7 @@ desc_inner_surv <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = su
 
 ### Tuning models
 
-```{r, message = FALSE, echo=FALSE}
+```{r, message = FALSE, echo=FALSE, message=FALSE}
 # learners, search space and control grid previously defined
 
 parallelStartSocket(5)
@@ -1488,13 +1600,14 @@ parallelStop()
 ```
 
 ### Comparing results
-```{r, fig.height=4, fig.width=12, echo=FALSE}
+
+```{r, fig.height=4, fig.width=12, echo=FALSE, message=FALSE}
 res_iters_surv <- getTuneResultOptPath(tuning_results_surv)
 t_surv <- res_iters_surv %>% dplyr::select(selected.learner, tpr.test.mean)
 
 p_surv <- ggplot(t_surv, aes(tpr.test.mean, selected.learner)) + 
-         geom_boxplot(aes(color = selected.learner))  + 
-         labs(x = "True Positive Rate (Surv)", y = "")
+         geom_boxplot(aes(fill = selected.learner))  + 
+         labs(x = "True Positive Rate (Surv)", y = "") +scale_fill_brewer(palette="Blues")
 
 ggarrange(p_surv, p_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
@@ -1503,7 +1616,7 @@ ggarrange(p_surv, p_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "righ
 fv2 <- generateFilterValuesData(surv_task, method = "FSelectorRcpp_information.gain")
 plotFilterValues(fv2, feat.type.cols = TRUE) + ggpubr::theme_pubr() + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  ggtitle("Filter Selection \n Information Gain")
+  ggtitle("Filter Selection \n Information Gain") + scale_fill_brewer(palette="Blues")
 
 fv2$data[order(-value)]
 ```
@@ -1539,8 +1652,10 @@ res_iters_surv_fs <- getTuneResultOptPath(tuning_results_surv_fs)
 t_surv_fs <- res_iters_surv_fs %>% dplyr::select(selected.learner, tpr.test.mean)
 
 p_surv_fs <- ggplot(t_surv_fs, aes(tpr.test.mean, selected.learner)) + 
-             geom_boxplot(aes(color = selected.learner))  + 
-             labs(x = "True Positive Rate (Surv + FSel)", y = "")
+             geom_boxplot(aes(fill = selected.learner))  + 
+             labs(x = "True Positive Rate (Surv + FSel)", y = "")  + 
+  scale_fill_brewer(palette="Blues")
+
 
 res1 <- t_surv %>% group_by(selected.learner) %>% summarise(MedianAllFeat=median(tpr.test.mean), MeanAllFeat=mean(tpr.test.mean))
 res2 <- t_surv_fs %>% group_by(selected.learner) %>% summarise(MedianFSel=median(tpr.test.mean), MeanFSel=mean(tpr.test.mean))
@@ -1550,7 +1665,7 @@ comparison
 ggarrange(p_surv, p_surv_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 # Obtaining best iteration for each learner (selecting features)
 best_res_surv <- res_iters_surv_fs %>% group_by(selected.learner) %>% slice(which.max(tpr.test.mean)) %>% 
                  relocate(tpr.test.mean, .after = selected.learner)
@@ -1570,7 +1685,7 @@ tuning_res_surv
 
 ### Test result
 
-```{r, echo=FALSE, warning = FALSE}
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
 final_data_surv <- data_surv_tot %>% dplyr::select(Event, Creatinine, Ejection.Fraction, Ejection.Fraction_Diabetes, Sodium)
 final_surv_task <- makeClassifTask(id = "HeartFailure", data = final_data_surv, target = "Event", positive = 1)
 
@@ -1590,21 +1705,13 @@ prueba_results <- resample(learner = prueba_learner,
                     show.info = TRUE)
 ```
 
-
-
-#### NOTES ####
+#### NOTES
 
 Explicability of the models
 
-Stratification (no need for rebalancing because of is not toooo unbalanced. Expain why we stratified.)
-
-
+Stratification (no need for rebalancing because of is not toooo
+unbalanced. Expain why we stratified.)
 
 Algorithms like naive bayes benefit from gaussian data
 
 show.info = FALSE
-
-
-## PIETRO
-plot_bar try color it
-fix heatmap
