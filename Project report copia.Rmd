@@ -1,10 +1,12 @@
 ---
 title: "ML project"
-author: "Pietro & Marita"
-datae: "2/24/2022"
-output: pdf_document
-editor_options: 
-  markdown: 
+author: "Pietro"
+datae: 2/24/2022
+output:
+  word_document: default
+  pdf_document: default
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -20,7 +22,6 @@ library(GGally)
 library(ggthemes) # Load
 library(ggpubr)
 library(ggplot2)
-library(DataExplorer)
 
 library(survival)
 library(survminer)
@@ -30,9 +31,11 @@ library(corrplot)
 library(tidyverse)
 library(mlr)
 library(mlrCPO)
+library(DataExplorer)
+library(parallel)
 
-# setwd("~/Desktop/ML/MLHeartAttacks")
-setwd("C:/Users/marit/OneDrive - Université Libre de Bruxelles/Bureau/BDMA/UPC/ML/PROJECT")
+setwd("~/Desktop/ML/MLHeartAttacks")
+# setwd("C:/Users/marit/OneDrive - Université Libre de Bruxelles/Bureau/BDMA/UPC/ML/PROJECT")
 data <- read.csv('Heart failure.csv', sep=";") #heart....
 data.table <- data
 data <- data %>% as_tibble()
@@ -41,12 +44,11 @@ n <- nrow(data)
 
 Two aricles where these data come from:
 
-1. Chicco, D., Jurman, G. Machine learning can predict survival of patients 
-with heart failure from serum creatinine and ejection fraction alone. 
-BMC Med Inform Decis Mak 20, 16 (2020). [DOI](https://doi.org/10.1186/s12911-020-1023-5)
+<https://bmcmedinformdecismak.biomedcentral.com/articles/10.1186/s12911-020-1023-5#Tab1>
 
-2. Ahmad T, Munir A, Bhatti SH, Aftab M, Raza MA (2017) Survival analysis
-of heart failure patients: A case study. PLoS ONE 12(7): e0181001. [DOI](https://doi.org/10.1371/journal.pone.0181001)
+Ahmad T, Munir A, Bhatti SH, Aftab M, Raza MA (2017) Survival analysis
+of heart failure patients: A case study. PLoS ONE 12(7): e0181001.
+<https://doi.org/10.1371/journal.pone.0181001>
 
 These are the data we have about the survavial from
 
@@ -55,7 +57,7 @@ data
 skim(data)
 ```
 
-*Gender*, *Smoking*, *Diabetes*, *BP* and *Anaemia* are factors that have been
+Gender, Smoking, Diabetes, BP and Anaemia are factors that have been
 saved as numerical values. To start, we decided to transform them into
 categorical variables
 
@@ -87,19 +89,20 @@ the explorative analysis and the decisions that will be made on them
 will not be biased by the knowledge acquired from the test set. 
 What follows is based on the training set.
 
-```{r, echo=FALSE, warning = FALSE}
-desc_outer <- makeResampleDesc("Holdout", split = 3/4, stratify = TRUE)
-final_task <- makeClassifTask(id = "HeartFailure", data = data, target = "Event", positive = 1)
+```{r, echo=FALSE}
+desc_outer <- makeResampleDesc("Holdout", split = 4/5, stratify = TRUE)
+classif_task <- makeClassifTask(id = "HeartFailure", data = data, target = "Event", positive = 1)
 
 set.seed(1234)
-partition_outer <- makeResampleInstance(desc_outer, final_task) 
+partition_outer <- makeResampleInstance(desc_outer, classif_task) 
 
+set.seed(1234)
 train.idxs <- partition_outer$train.inds[[1]]
 test.idxs <- partition_outer$test.inds[[1]]
 tot <- data
 test <- tot[-train.idxs,]
 train <- tot[train.idxs,]
-data <- as.data.frame(train)
+data <- train
 
 # necessary for survival models
 tot.table <- data.table
@@ -140,7 +143,7 @@ couples *Creatinine-Age*, *Creatinine-Sodium* and
 The, we plotted the binomial variables in order to see if their
 distribution is balanced.
 
-```{r, echo = FALSE}
+```{r}
 plot_bar(data,
          ncol    = 3,
          title   = "Observations per value",
@@ -155,29 +158,6 @@ with *Event*=1 is only `{r} sum(data$Event==1)/n`. Even *Gender*,
 *Smoking* and *BP* have unbalanced distributions, but the number of
 elements in the two levels for all these variables are enough to say
 that we are not in presence of rare classes.
-
-
-# !!!!!!!! Should we add here this?
-
-In the BMC article cited above, the conclusion is drawn that the 
-variables *Ejection.Fraction* and *Creatinine* are the best performers 
-when training the models. Therefore, we want to put special emphasis 
-on the correlation between these two predictors and the response 
-variable *Event*. Since these are numerical and the response variable 
-is continuous, we must perform a correlation test according to 
-these characteristics: Point-Biserial Correlation.
-
-```{r, echo = FALSE, message=FALSE, warning=FALSE}
-library(ltm)
-cat("Biserial Correlation between Ejection.Fraction and Event is: ", biserial.cor(train$Ejection.Fraction, train$Event))
-cat("Biserial Correlation between Ejection.Fraction and Event is: ", biserial.cor(train$Creatinine, train$Event))
-```
-
-The fact that the two best predictors according to BMC article
-have a correlation with the response variable of approximately 0.3
-will make our predictions rather mediocre. This will be a clear 
-limitation in the project, because not only we have few instances
-available but now we encountered low correlations.
 
 ## Time and factors
 
@@ -215,40 +195,32 @@ ggarrange(ggarrange(g2,g3,g4, ncol=3, nrow=1) ,ggarrange(g5,g6), ncol = 1, nrow 
           annotate_figure(top=text_grob("TIME",face="bold"))
 ```
 
-This result is interesting, since it tell us that the experiment from
-which the data has been collected is unbiased in respect of differences
-between the persons under observation. In other words, the selected
-people were kept under observation indipendently from the collected
-variables that described themselves. It is important because it means
-that we can rely the way data has been collected and use it to provide
-results that will not be biased.
+This result is interesting, since it tell us that the experiment from which the data has been collected is unbiased in respect of differences between the persons under observation. 
+In other words, the selected people were kept under observation independently from the collected variables that described themselves. 
+It is important because it means that we can rely the way data has been collected and use it to provide results that will not be biased.
 
-We have to consider aside the boxplot about *TIME* in respect to the
-*Event*. It is clear that the time under observation for people that
-have presented an hart attack is lower than the the one of the ones that
-did not. As expected, this indicates that the heart attack looks to
-reduce the time under observation. The opposite would have been
-unexpected. It can seems obvious, but not having this result would have
-lead us to conclude that the data were not able to explain the relation
-between the explicative variables and the answer variable.
+We have to consider aside the boxplot about *TIME* in respect to the *Event*. It is clear that the time under observation for people that have presented an hart attack is lower than the the one of the ones that did not. 
+As expected, this indicates that the heart attack looks to reduce the time under observation. 
+The opposite would have been unexpected. 
+It can seems obvious, but not having this result would have lead us to conclude that the data were not able to explain the relation between the explicative variables and the answer variable.
 
-```{r graph3, fig.height = 2, fig.width = 3, fig.align = "center", echo=FALSE }
+```{r graph3, fig.height = 3, fig.width = 3, fig.align = "center", echo=FALSE }
 
 g1 <- g + geom_boxplot(aes(x=as.factor(Event), fill=Event),
                        varwidth=FALSE) +
-  labs(title="",x="Event", y = "TIME", color="Event") +
+  labs(title="",x="Event", y = "TIME", fill="Event") +
   scale_fill_brewer(palette="Blues")  +
   theme_minimal()
-g1 + theme(axis.text=element_text(size=8),
-        axis.title=element_text(size=9),
-        legend.title =element_text(size=9) ,
-        legend.text =element_text(size=9))
+g1 + theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13,face="bold"),
+        legend.title =element_text(size=13,face="bold") ,
+        legend.text =element_text(size=12,face="bold"))
+  
 ```
 
 ## Countinous variables vs Event or cathegorical variables
 
-Then, we looked at the relation between the pairs of categorical and
-continuous variables, included the *Event.*
+Then, we looked at the relation between the pairs of categorical and continuous variables, included the *Event.*
 
 The scope of the following analysis is double:
 
@@ -355,28 +327,28 @@ variable.
 
 ```{r graphs6, echo=FALSE, fig.height = 4, fig.width = 8}
 g <- ggplot(data, aes(y=Sodium))
-g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
-  labs(title="",x="", y = "", color="Event")  +
-  scale_fill_brewer(palette="Blues") +
-  theme_minimal()
 
-g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+g1 <- g + geom_boxplot(aes(x=as_factor(Event), fill=Event)) +
   labs(title="",x="", y = "", color="Gender")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), fill=Gender)) +
+  labs(title="",x="", y = "", color="Gender")  +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), fill=Smoking)) +
   labs(title="",x="", y = "", color="Smoking")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), fill=Diabetes)) +
   labs(title="",x="", y = "", color="Diabetes")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), fill=BP)) +
   labs(title="",x="", y = "", color="BP")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), fill=Anaemia)) +
   labs(title="",x="", y = "", color="Anaemia")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
@@ -384,44 +356,38 @@ ggarrange(g1,g2,g3,g4,g5,g6, ncol = 3, nrow = 2) %>%
           annotate_figure(top=text_grob("Sodium", face="bold"))
 ```
 
-In this situation data look to be less regular. There are multiple
-points that are enough far from the median to allow us to say that a
-deeper analysis of outliers could be considered. In particular, some
-data present an unusual low value of *Sodium*.
+In this situation data look to be less regular. 
+There are multiple points that are enough far from the median to allow us to say that a deeper analysis of outliers could be considered. 
+In particular, some data present an unusual low value of *Sodium*.
 
-Talking about differences between the distribution of the amount of
-*Sodium* in the two groups, there is not difference to be noticed. On
-the other hand, this variable does not look very useful in term of
-explaining the distribution of the *Event*, since the level of *Sodium*
-is almost the same for both the groups of people having had an heart
-attack while being under observation and people who didn't.
+Talking about differences between the distribution of the amount of *Sodium* in the two groups, there is not difference to be noticed. On the other hand, this variable does not look very useful in term of explaining the distribution of the *Event*, since the level of *Sodium* is almost the same for both the groups of people having had an heart attack while being under observation and people who didn't.
 
 ## Pletelets vs factors
 
 ```{r graphs7, echo=FALSE, fig.height = 4, fig.width = 8}
 g <- ggplot(data, aes(y=Pletelets))
-g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+g1 <- g + geom_boxplot(aes(x=as_factor(Event), fill=Event)) +
   labs(title="",x="", y = "", color="Event")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
 
-g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), fill=Gender)) +
   labs(title="",x="", y = "", color="Gender")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), fill=Smoking)) +
   labs(title="",x="", y = "", color="Smoking")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), fill=Diabetes)) +
   labs(title="",x="", y = "", color="Diabetes")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), fill=BP)) +
   labs(title="",x="", y = "", color="BP")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), fill=Anaemia)) +
   labs(title="",x="", y = "", color="Anaemia")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
@@ -445,7 +411,7 @@ visualization observation with a level of Creatinine higher than 5.
 
 #ADD LEGEND TO THE GRAPH
 
-```{r graphs8, fig.height = 1.5, fig.width = 5, fig.align = "center", echo=FALSE, warning=FALSE}
+```{r graphs8, fig.height = 1.5, fig.width = 5, fig.align = "center", echo=FALSE}
 data_for_creatinine <- data %>% dplyr::select(Creatinine)
 idxLessThan5 <- data_for_creatinine$Creatinine<5
 LessThan5 <- data_for_creatinine$Creatinine
@@ -463,28 +429,28 @@ ggplot(data_for_creatinine) + stat_density(aes(Creatinine), adjust = 2, alpha=1,
 
 ```{r graphs9, echo=FALSE, fig.height = 4, fig.width = 8}
 g <- ggplot(data %>% filter(Creatinine<5), aes(y=Creatinine))
-g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event)), coef=2.5) +
+g1 <- g + geom_boxplot(aes(x=as_factor(Event), fill=Event), coef=2.5) +
   labs(title="",x="", y = "", color="Event")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
 
-g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender)), coef=2.5) +
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), fill=Gender), coef=2.5) +
   labs(title="",x="", y = "", color="Gender")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking)), coef=2.5) +
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), fill=Smoking), coef=2.5) +
   labs(title="",x="", y = "", color="Smoking")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes)), coef=2.5) +
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), fill=Diabetes), coef=2.5) +
   labs(title="",x="", y = "", color="Diabetes")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP)), coef=2.5) +
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), fill=BP), coef=2.5) +
   labs(title="",x="", y = "", color="BP")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia)), coef=2.5) +
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), fill=Anaemia), coef=2.5) +
   labs(title="",x="", y = "", color="Anaemia")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
@@ -511,7 +477,7 @@ distribution is unbalanced:
 ```{r graphs10, fig.height = 1.5, fig.width = 5, fig.align = "center", echo=FALSE}
 
 ggplot(data) + stat_density(aes(CPK), adjust = 2,
-                           alpha=0.8) +
+                           alpha=0.8, fill="#8EC3E8") +
   theme_minimal() + labs(y="Density") +
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=13,face="bold"),
@@ -687,7 +653,7 @@ estimate." International journal of Ayurveda research vol. 1,4 (2010):
 
 First, we evaluated the dichotomous variables.
 
-```{r surv1, echo=FALSE, fig.height = 4}
+```{r surv1, echo=FALSE, fig.height = 6}
 s1 <- Surv(data$TIME, data$Event)
 surv_m1 <- survfit(s1~data$Gender, error="greenwood",
                    conf.type="log", se.fit=TRUE, conf.int=0.95,
@@ -707,6 +673,7 @@ g[[4]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~BP, data=data),
                  conf.int=T, pval.method=T, log.rank.weights="1", data=data)
 g[[5]] <- ggsurvplot(survfit(Surv(TIME, (Evento))~Anaemia, data=data),
                  conf.int=T, pval.method=T, log.rank.weights="1", data=data)
+
 arrange_ggsurvplots(g, print = TRUE,
   ncol = 2, nrow = 3, risk.table.height = 0.4)
 # ggarrange(g1,g2,g3,g4,g5,
@@ -984,11 +951,11 @@ The process through which we selected these variables was, as already mentioned,
 *  *Smoking* and *Gender*: the data is collected in Pakistan. It could be reasonable to think that there are not collected variables that could distinguish women that smoke from the ones that does not. For example, it could be that women that smoke are from specific social subgroups where other risky behaviors are more frequent than in the average men population (e.g., the women that smoke are western women with different habits from Pakistani people).
 
 *  *Gender* and *Pletelets*: see Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors 
-Ranucci M, Aloisio T, Di Dedda U, Menicanti L, de Vincentiis C, et al. (2019) Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors. PLOS ONE 14(11): e0225771. [DOI](https://doi.org/10.1371/journal.pone.0225771)
+Ranucci M, Aloisio T, Di Dedda U, Menicanti L, de Vincentiis C, et al. (2019) Gender-based differences in platelet function and platelet reactivity to P2Y12 inhibitors. PLOS ONE 14(11): e0225771. https://doi.org/10.1371/journal.pone.0225771
 
-*  *Age* and *Ejection Fraction*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[11] `) for each more year of age. This result in completely aligned with experimental results (Chuang, Michael L et al. “Association of age with left ventricular volumes, ejection fraction and concentricity: the Framingham heart study.” Journal of Cardiovascular Magnetic Resonance vol. 15,Suppl 1 P264. 30 Jan. 2013, [DOI](https://doi.org/10.1186/1532-429X-15-S1-P264).
+*  *Age* and *Ejection Fraction*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[11] `) for each more year of age. This result in completely aligned with experimental results (Chuang, Michael L et al. “Association of age with left ventricular volumes, ejection fraction and concentricity: the Framingham heart study.” Journal of Cardiovascular Magnetic Resonance vol. 15,Suppl 1 P264. 30 Jan. 2013, doi:10.1186/1532-429X-15-S1-P264).
 
-*  *Ejection Fraction* and *Diabetes*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[12] `) for people with diabetes. This is out of the range of our knoweldge and after some research we were able to say that this is still an open issue (Ehl NF, Kühne M, Brinkert M, Müller-Brand J, Zellweger MJ. Diabetes reduces left ventricular ejection fraction--irrespective of presence and extent of coronary artery disease. Eur J Endocrinol. 2011 Dec;165(6):945-51. [doi](https://doi.org/10.1530/EJE-11-0687) Epub 2011 Sep 8. PMID: 21903896.)
+*  *Ejection Fraction* and *Diabetes*: the increment of the ejection fraction leads to a decrease of the survival ratio (of `r final$coef[12] `) for people with diabetes. This is out of the range of our knoweldge and after some research we were able to say that this is still an open issue (Ehl NF, Kühne M, Brinkert M, Müller-Brand J, Zellweger MJ. Diabetes reduces left ventricular ejection fraction--irrespective of presence and extent of coronary artery disease. Eur J Endocrinol. 2011 Dec;165(6):945-51. doi: 10.1530/EJE-11-0687. Epub 2011 Sep 8. PMID: 21903896.)
 
 * *Ejection Fraction* and *Creatinine*: the same as before.
 
@@ -1078,6 +1045,7 @@ We will be using R package *mlr* as a framework. It follows the following patter
 
 In our case, since there are many models that we want to apply, we will be doing a benchmark before actually training. This will give us a glimpse of the accuracies that these methods would get. After that, we will be tuning hyperparameters in the best performing models.
 
+\textcolor{red}{## NOTA: non sono certo sia l'approccio giusto.}
 
 ## Creating the task and Validation partitioning
 
@@ -1085,38 +1053,62 @@ In our case, since there are many models that we want to apply, we will be doing
 If the sample size is small, it is recommended to use repeated k-Fold-Cross-Validation, as it achieves a good bias-variance balance and, given that there are not many observations, the computational cost is not excessive. (In other words, you could even do a high number of folds because it will take little time). For instance, in our benchmark we will use 5 folds with 10 reps, which is not equivalent to 50-folds-cross-validation. The issue with partitioning data with few instances is that results may depend on luck. That's why we are considering 10 different partitions with 5 folds, so results will not depend on chance, but the average will be closer to reality.
 
 
-# Machine Learning Analysis
+# Analysis
 
-CHANGE THIS !!!
-
-Why mlrCPO  [Reference](https://www.rdocumentation.org/packages/mlrCPO/versions/0.3.4/topics/mlrCPO-package)
+Why mlrCPO
+Reference: https://www.rdocumentation.org/packages/mlrCPO/versions/0.3.4/topics/mlrCPO-package 
 
 Basically you define a pipeline using the mlrCPO pipeop %>>%. 
 Every pipeop you put before the learner will be applied directly before the training but after the train test split.
+Reference: https://stackoverflow.com/questions/57174813/mlr-avoiding-data-leakage-in-cross-validation
 
-## Classification Analysis
+Cindex: Fraction of all pairs of subjects whose predicted survival times are correctly ordered among all subjects that can actually be ordered. In other words, it is the probability of concordance between the predicted and the observed survival.
+Reference: https://mlr.mlr-org.com/articles/tutorial/measures.html
+
+
+# Classification analysis
 
 We will not consider the variable *Time* from now on because it would not be information that we would obtain from a new patient, it is only a control variable.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-data_classif <- as.data.frame(data) %>% dplyr::select(-TIME) %>%
-                mutate_at(vars(Gender, Smoking, Diabetes, BP, Anaemia), as.numeric) 
+```{r, include = FALSE}
+data_classif <- train %>% dplyr::select(-TIME)
 
-classif_task <- makeClassifTask(id = "HeartFailure", data = data_classif, target = "Event", positive = 1) # data only contains training data
-
-set.seed(1234)
-desc_inner <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = classif_task, stratify = TRUE)
+classif_task <- makeClassifTask(id = "HeartFailure", data = data_classif, target = "Event", positive = 1)
 ```
 
-```{r, warning = FALSE, echo=FALSE}
+# FILTER Selection 
+
+We saw in the BMC article that one of their conclusions was: "Our results of these two-feature models show not only that serum creatinine and ejection fraction are sufficient to predict survival of heart failure patients from medical records, but also that using these two features alone can lead to more accurate predictions than using the original data set features in its entirety." They employed a traditional univariate biostatistics analysis to 
+```{r}
+library(FSelectorRcpp)
+fv <- generateFilterValuesData(classif_task, method = "FSelectorRcpp_information.gain")
+plotFilterValues(fv, feat.type.cols = TRUE) + ggpubr::theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle("Filter Selection \n Information Gain")
+
+fv$data[order(-value)]
+```
+
+
+
+```{r, include = FALSE}
+data_classif <- data %>% dplyr::select(Creatinine, Ejection.Fraction, Sodium, Event)
+
+classif_task <- makeClassifTask(id = "HeartFailure", data = data_classif, target = "Event", positive = 1)
+
+set.seed(1234)
+desc_inner <- makeResampleInstance("RepCV", reps = 2,  folds = 4, task = classif_task)
+```
+
+```{r, warning = FALSE}
 # https://mlr.mlr-org.com/articles/tutorial/integrated_learners.html
 
-classif_measures <- list(tpr, timetrain)
+classif_measures <- list(tpr, fnr, acc, auc, timetrain)
 classif_pipeline <- cpoScaleRange() 
 
 ## GLM ##
-library(glmnet)
-classif_lrn_glm <- makeLearner("classif.glmnet", id = "glm", predict.type = "prob")
+library(h2o)
+classif_lrn_glm <- makeLearner("classif.h2o.glm", id = "glm", predict.type = "prob")
 classif_lrn_glm <- classif_pipeline %>>% classif_lrn_glm
 
 ## Naive Bayes ##
@@ -1154,23 +1146,30 @@ classif_lrn_SVM <- makeLearner("classif.svm", id = "SVM", predict.type = "prob")
 classif_lrn_SVM <- classif_pipeline %>>% classif_lrn_SVM
 
 ## Ada Boosting ##
-# library(ada)
-# classif_lrn_ada <- makeLearner("classif.ada", id = "ada", predict.type = "prob")
-# classif_lrn_ada <- classif_pipeline %>>% classif_lrn_ada
+library(ada)
+classif_lrn_ada <- makeLearner("classif.ada", id = "ada", predict.type = "prob")
+classif_lrn_ada <- classif_pipeline %>>% classif_lrn_ada
 
 ## Neural Net ##
 # library(neuralnet)
 classif_lrn_neuralnet <- makeLearner("classif.neuralnet", id = "neuralnet", predict.type = "prob")
-classif_lrn_neuralnet <- classif_pipeline %>>% classif_lrn_neuralnet
+# classif_lrn_neuralnet <- classif_pipeline %>>% classif_lrn_neuralnet
 
 ## Extreme Gradient Boosting ##
-classif_lrn_xgboost <- makeLearner("classif.xgboost", id = "xgboost", eval_metric = "aucpr", predict.type = "prob")
+classif_lrn_xgboost <- makeLearner("classif.xgboost", id = "xgboost", predict.type = "prob")
 classif_lrn_xgboost <- classif_pipeline %>>% classif_lrn_xgboost
 
-learners <- list(classif_lrn_glm, classif_lrn_naive, classif_lrn_knn, classif_lrn_rpart, 
-                 classif_lrn_rf, classif_lrn_ranger, classif_lrn_SVM, 
-                 classif_lrn_neuralnet, classif_lrn_xgboost)
-# classif_lrn_ada,
+
+# Repeated cross-validation splits the data in k folds, n reps (folds will be different n times)
+# This prevents from noisy estimates of model performance, because different splits may result in very different results. MENTION STRATIFICATION
+# outer <- makeResampleDesc("RepCV", reps = 10, 
+#                           folds = 5, stratify = TRUE) 
+
+learners <- list(classif_lrn_glm, classif_lrn_naive, classif_lrn_knn, classif_lrn_lda, classif_lrn_qda, 
+                 classif_lrn_rpart, classif_lrn_rf, classif_lrn_ranger, classif_lrn_SVM, classif_lrn_ada,
+#                 classif_lrn_neuralnet, 
+                 classif_lrn_xgboost)
+
 library(parallelMap)
 parallelStartSocket(2) # start in socket mode and create 2 processes on localhost
 
@@ -1180,431 +1179,144 @@ bmr_classif <- benchmark(learners    = learners,
                          resamplings = desc_inner, 
                          measures    = classif_measures, 
                          models      = TRUE,
-                         show.info   = TRUE)
+                         show.info   = FALSE)
 bmr_classif
 
 parallelStop()
 ```
 
-### Filter Selection 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-data_fs <- train %>% dplyr::select(-TIME)
+# All numeric variables
 
-fs_task <- makeClassifTask(id = "HeartFailure", data = data_fs, target = "Event", positive = 1)
-```
+The following two models (*extreme gradient boosting* and *neural network*) can not support categorical/factor variables, so we have to convert every variable to numeric. This is why we decided that standardizing our variables with range 0 to 1 was the best option as now all numeric variables will be in the same range as the transformed factor features.
+```{r, message=FALSE, fig.height=4, fig.width=10}
 
-In order to decide which features would be selected to see if 
-they help the models get better predictions, we will perform
-filter selection. Unlike feature selection, this method does not
-require of a learner to reach a conclusion. We have checked that
-depending on the learner selected, results change drastically.
-Filter selection was found to be a more impartial methodology.
-
-The metric used for this filter selection is *Information Gain*. 
-It measures the reduction in entropy (or surprise) by splitting 
-a dataset according to a given value of a random variable. 
-A larger information gain suggests a lower entropy group or 
-groups of samples, and hence less surprise. [Reference](https://machinelearningmastery.com/information-gain-and-mutual-information/) 
-
-Entropy quantifies how much information there is in a random 
-variable, or more specifically its probability distribution. 
-A skewed distribution has a low entropy, whereas a distribution 
-where events have equal probability has a larger entropy.
-
-```{r, echo=FALSE}
-library(FSelectorRcpp)
-fv <- generateFilterValuesData(fs_task, method = "FSelectorRcpp_information.gain")
-plotFilterValues(fv, feat.type.cols = TRUE) + ggpubr::theme_pubr() + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  ggtitle("Filter Selection \n Information Gain")
-
-fv$data[order(-value)]
-```
-
-We saw in the BMC article that one of their conclusions was: 
-"Our results of these two-feature models show not only that 
-*serum creatinine* and *ejection fraction* are sufficient to 
-predict survival of heart failure patients from medical 
-records, but also that using these two features alone can 
-lead to more accurate predictions than using the original 
-data set features in its entirety."
-
-Therefore, considering the results obtained, the conclusions 
-of the previous analysis, and that the correlation between 
-the response variable and Sodium is approximately 0.2, we 
-have decided to use only *serum creatinine* and 
-*ejection fraction* for the comparison of results.
-
-```{r, echo=FALSE}
-data_fs <- data %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
-
-fs_task <- makeClassifTask(id = "HeartFailure", data = data_fs, target = "Event", positive = 1)
-
-set.seed(1234)
-desc_inner_fs <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = fs_task, stratify = TRUE)
-```
-
-```{r, warning = FALSE, echo=FALSE, message=FALSE}
-# https://mlr.mlr-org.com/articles/tutorial/integrated_learners.html
-
-# Using the same learners defined in previous chunk
-
-parallelStartSocket(2) # start in socket mode and create 2 processes on localhost
-
-set.seed(1234)
-bmr_fs <- benchmark(learners    = learners, 
-                    tasks       = fs_task, 
-                    resamplings = desc_inner_fs, 
-                    measures    = classif_measures, 
-                    models      = TRUE,
-                    show.info   = FALSE)
-bmr_fs
-
-parallelStop()
-```
-
-```{r, message=FALSE, fig.height=4, fig.width=10, echo=FALSE}
-bp1 <- plotBMRBoxplots(bmr_classif, 
+bp5 <- plotBMRBoxplots(bmr_classif, 
                        measure   = tpr, 
                        order.lrn = getBMRLearnerIds(bmr_classif))  +
-       aes(color = learner.id)  +
-       labs(x = "", y = "True Positive Rate")
+                       aes(color = learner.id)
+# 
+# bp6 <- plotBMRBoxplots(merged_bmr, 
+#                        measure   = acc, 
+#                        order.lrn = getBMRLearnerIds(merged_bmr))  +
+#                        aes(color = learner.id)
+# 
+# bp7 <- plotBMRBoxplots(merged_bmr, 
+#                        measure   = auc, 
+#                        order.lrn = getBMRLearnerIds(merged_bmr))  +
+#                        aes(color = learner.id)
 
-bp3 <- plotBMRBoxplots(bmr_fs, 
-                       measure   = tpr, 
+bp8 <- plotBMRBoxplots(bmr_classif, 
+                       measure   = timetrain, 
                        order.lrn = getBMRLearnerIds(bmr_classif))  +
-       aes(color = learner.id)  +
-       labs(x = "", y = "True Positive Rate (FSel)")
+                       aes(color = learner.id)
 
-ggarrange(bp1, bp3, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
+# ggarrange(bp5, bp6, bp7, bp8, ncol = 2, nrow = 2, common.legend = TRUE, legend = "right")
+
+ggarrange(bp5, bp8, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
 
-Here, our aim is to maximize *TPR*, because in the medical area it is better to have false alarms (overestimating positives) than not predicting real positives. Some models may have a good accuracy (even better than other models), but that is not the priority in healthcare analysis (such as predicting cancer and other diseases). For instance, a trivial model (e.g. predicting all patients as class 0), would give very high accuracies, not taking into account any of the data provided. That's why we will decide which model is better based on *TPR* (true positive rate). 
+Here, our aim is to maximize TPR, because in this area it is better to have false alarms (overestimating positives) than not predicting real positives. Some models may have a good accuracy (even better than other models), but that is not the priority in healthcare analysis (such as predicting cancer and other diseases). So we will decide which model is better focusing on TPR. The best model in this case, similarly to random forest, is neuralnet, which gets a 0.658 true positive rate.
 
-In this stage, we would like to decide whether we use the whole dataset or the subset obtained selecting some features. From the results we can comment on three main points:
-
-* Weak learners perform visibly worse, some of them even reaching a tpr of around 0.2 
-
-* K-nearest neighbor performs surprisingly better when selecting few features. This can be explained because the algorithm does not work well with high dimensions. Performance changed from 0.3 to 0.6, with a default of 7 neighbors. Support Vector Machine also benefits from less features.
-
-* Lastly, we see that overall models perform slightly better with the feature selection. However, results vary much more depending on the partition. In view of the results, we decide to perform tuning for both datasets using a subset of the best performing learners. We will be tuning mainly "strong learners" (i.e. excluding *glm*, *naive bayes*) as well as *SVM*, because we believe they will be able to discard useless features and reach better performances while being consistent, not fluctuating much.
-
-For now, we should mention that *rpart* (tree) is accomplishing good results, and would be convenient for this project since it is easy to explain.
+However, models can improve their results when we tune their parameters. We are going to do so for all the models that got an acceptable tpr (excluding *glm*, *naive bayes*, *lda* and *qda*)
 
 
-### Tuning models
-
-In this section, we are going to tune different hyperparameters for the following models: kknn, rpart, random forest, ranger, extreme gradient boosting, and neural network. Below we will explain the reasoning behind selecting each parameter. The same validation method as for the previous analysis will be used, i.e. Repeated Cross Validation with 2 folds and 5 iterations. For the hyperparameter optimization, random search will be executed. It is shown to be more efficient in a paper by Bergstra, J. and Bengio, Y. (2012).[Reference](https://www.jmlr.org/papers/volume13/bergstra12a/bergstra12a.pdf). A total of 200 iterations will be splitted among the 7 learners chosen for tuning.
-
-```{r, message = FALSE, echo=FALSE}
-bls <- list(makeLearner("classif.kknn"),
-            makeLearner("classif.rpart"), 
-            makeLearner("classif.randomForest"),
-            makeLearner("classif.ranger"),
-            makeLearner("classif.xgboost", eval_metric = "aucpr"),
-            makeLearner("classif.neuralnet"))
-
-lrn <- makeModelMultiplexer(bls)
-
-# Parameter Space (all together, divided by learner inside)
-ps <- makeModelMultiplexerParamSet(
-  multiplexer = lrn,
-  classif.kknn = makeParamSet(makeIntegerParam("k", lower = 5, upper = 15)), # Default is 7-
-  classif.rpart = makeParamSet(makeIntegerParam("minsplit", lower = 15, upper = 35), # Default is 20
-                               makeIntegerParam("maxdepth", lower = 5, upper = 10)), # Default is 30
-  classif.randomForest = makeParamSet(makeIntegerParam("ntree", lower = 20, upper = 500), #Default is 500
-                                      makeIntegerParam("mtry",lower = 1, upper = 2), #Default is floor(sy,qrt(features/3)), cannot be larger than number of variables
-                                      makeIntegerParam("nodesize", lower = 10, upper = 50)), #Default is 1
-  classif.ranger = makeParamSet(makeIntegerParam("mtry", lower = 1, upper = 2), # Same parameters as randomForest
-                                makeIntegerParam("num.trees", lower = 20, upper = 500),
-                                makeIntegerParam("min.node.size", lower = 10, upper = 50)),
-  classif.xgboost = makeParamSet(makeNumericParam("eta", lower = 0.2, upper = 0.5), # Default is 0.3
-                                 makeIntegerParam("nrounds", lower = 4, upper = 10), # Default is 
-                                 makeIntegerParam("max_depth", lower = 3, upper = 10)), # Default is 6
-  classif.neuralnet = makeParamSet(makeIntegerVectorParam("hidden", len = 1, lower = 5, upper = 10),
-                                   makeNumericParam("threshold", lower = 2, upper = 5, trafo = function(x) {10^x}),
-                                   makeNumericParam("stepmax", lower = 2, upper = 3, trafo = function(x) {10^x}))
-)
-
-# Random Search
-control_grid <- makeTuneControlRandom(maxit = 200L) # Default is 100, split between the amount of learners
-
-
-parallelStartSocket(5) # start in socket mode and create 2 processes on localhost
-
-set.seed(1234)
-tuning_results_all <- tuneParams(learner = lrn, 
-                                 task = classif_task, 
-                                 resampling = desc_inner, 
-                                 par.set = ps, 
-                                 control = control_grid, 
-                                 measures = list(tpr),
-                                 show.info = TRUE)
-
-set.seed(1234)
-tuning_results_fs <- tuneParams(learner = lrn, 
-                                task = fs_task, 
-                                resampling = desc_inner, 
-                                par.set = ps, 
-                                control = control_grid, 
-                                measures = list(tpr),
-                                show.info = TRUE)
-parallelStop()
+```{r}
+configureMlr(show.info = TRUE, on.learner.warning = "warn") # see all info
+# configureMlr(show.info = FALSE, on.learner.warning = "quiet") # so we don't get too many messages
 ```
 
 
-```{r, fig.height=4, fig.width=12, echo=FALSE}
-#Check results
-res_iters_all <- getTuneResultOptPath(tuning_results_all)
-t_all <- res_iters_all %>% dplyr::select(selected.learner, tpr.test.mean)
-
-p_all <- ggplot(t_all, aes(tpr.test.mean, selected.learner)) + 
-         geom_boxplot(aes(color = selected.learner))  + 
-         labs(x = "True Positive Rate", y = "")
+# Tuning models
 
 
-res_iters_fs <- getTuneResultOptPath(tuning_results_fs)
-t_fs <- res_iters_fs %>% dplyr::select(selected.learner, tpr.test.mean)
-
-p_fs <- ggplot(t_fs, aes(tpr.test.mean, selected.learner)) + 
-         geom_boxplot(aes(color = selected.learner))  + 
-         labs(x = "True Positive Rate (FSel)", y = "")
-
-
-ggarrange(p_all, p_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
-```
-
-Finally, based on these graphs we can conclude that selecting few features is essential for this study. Excluding *neuralnet*, that clearly fails for this data set, all models are consistent in the right-side graph. The two bagging models (*ranger* and *randomForest*) get equivalent results, so one of these two should be used in the final model.
-
-```{r, echo=FALSE, warning=FALSE}
-# Obtaining best iteration for each learner (selecting features)
-best_res <- res_iters_fs %>% group_by(selected.learner) %>% slice(which.max(tpr.test.mean)) %>% 
-            relocate(tpr.test.mean, .after = selected.learner)
-library(reshape)
-options(scipen=999)
-temp <- melt(as.data.frame(best_res)) %>% dplyr::select(-error.message) %>% drop_na() 
-
-tpr.test <- temp %>% filter(grepl("tpr", variable)) %>% dplyr::rename(tpr = value) %>% dplyr::select(-variable)
-hyperparam <- temp %>% filter(grepl("classif", variable)) 
-
-tuning_res <- full_join(hyperparam, tpr.test) %>% 
-              mutate(parameter = ifelse(grepl("\\.", variable), sub(".*\\.(.*)", "\\1", variable), "")) %>%
-              dplyr::select(selected.learner, tpr, parameter, value) 
-
-rm(temp, tpr.test, hyperparam)
-tuning_res
-```
-
-
-#### Explanation of parameters
+# Explanation of parameters
 
 * RPART
 For the model *rpart* we are tuning two of the "stopping" parameters in the algorithm, that tells the tree when to stop growing (a way of pruning)
-  + *minsplit*: minimum number of observations that must exist in a node in order for a split to be attempted. If it is too small, the tree will keep growing and probably lead to overfitting, if it is too big the accuracy may decrease.
-  + *maxdepth*: Set the maximum depth of any node of the final tree, with the root node counted as depth 0. Again, if we let the tree make too many splits, it will lead to overfitting. A tree that is too small may generalize too much.
+*minsplit*: minimum number of observations that must exist in a node in order for a split to be attempted. If it is too small, the tree will keep growing and probably lead to overfitting, if it is too big the accuracy may decrease.
+*maxdepth*: Set the maximum depth of any node of the final tree, with the root node counted as depth 0. Again, if we let the tree make too many splits, it will lead to overfitting. A tree that is too small may generalize too much.
 
 * RANDOM FOREST
-  + *ntree*: this should not be set to too small a number, to ensure that every input row gets predicted at least a few times.
-  + *mtry*: number of variables to possibly split at in each node. (Cannot be bigger than the number of variables).
-  + *nodesize*: Setting this number larger causes smaller trees to be grown (and thus preventing from overfitting and takes less time)
+*ntree*: this should not be set to too small a number, to ensure that every input row gets predicted at least a few times.
+*mtry*: number of variables to possibly split at in each node. (Cannot be bigger than the number of variables).
+*nodesize*: Setting this number larger causes smaller trees to be grown (and thus preventing from overfitting and takes less time)
 
 * RANGER
 Same parameters as in random forest, since it's the same algorithm, just optimized.
 
 * SVM
-  + *cost*: is the penalty parameter, which represents misclassification or error term. If it's smaller, the decision boundary will have a big margin, resulting in more missclassified data. If it's bigger, the penalty is higher and the algorithm tries to minimize missclassifications.
-  + *gamma*: large gamma values will probably lead to overfitting. Small values will generalize too much.
+*cost*: is the penalty parameter, which represents misclassification or error term. If it's smaller, the decision boundary will have a big margin, resulting in more missclassified data. If it's bigger, the penalty is higher and the algorithm tries to minimize missclassifications.
+*gamma*: large gamma values will probably lead to overfitting. Small values will generalize too much.
 
 * ADA
-  + *nu*: This parameter is provided to shrink the contribution of each classifier, sometimes called learning rate. Reducing this parameter will mean the weights will be increased or decreased to a small degree, forcing the model train slower, although sometimes results in better performance scores.
-  + *iter*: number of boosting iterations to perform (total number of weak learners).
+*nu*: This parameter is provided to shrink the contribution of each classifier, sometimes called learning rate. Reducing this parameter will mean the weights will be increased or decreased to a small degree, forcing the model train slower, although sometimes results in better performance scores.
+*iter*: number of boosting iterations to perform (total number of weak learners).
 
 * XGBOOST
-  + *eta*: control the learning rate. Used to prevent overfitting by making the boosting process more conservative.
-  + *nrounds*: max number of boosting iterations.
-  + *max_depth*: maximum depth of a tree
+*eta*: control the learning rate. Used to prevent overfitting by making the boosting process more conservative.
+*nrounds*: max number of boosting iterations.
+*max_depth*: maximum depth of a tree
 
 * NEURALNET
-  + *hidden*: hidden neurons, for each layer (only one layer in our case since it will make it faster obtaining very good results)
+*hidden*: hidden neurons, for each layer (only one layer in our case since it will make it faster obtaining very good results)
 To help the algorithm converge when enlarging *hidden*, we need to make the *threshold* and *stepmax* bigger as well.
-  + *threshold*: threshold for the partial derivatives of the error function as stopping criteria.
-  + *stepmax*: maximum steps for the training of the neural network, if we make it bigger, we let more time for the algorithm to converge.
-
-
-### Test result
-
-```{r, echo=FALSE}
-# The outer partitioning was defined in the beginning of the document, we just have to update the preprocess of the data
-final_data <- as.data.frame(tot) %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
-desc_outer <- makeResampleDesc("Holdout", split = 3/4, stratify = TRUE)
-final_task <- makeClassifTask(id = "HeartFailure", data = final_data, target = "Event", positive = 1)
-
-set.seed(1234)
-partition_outer <- makeResampleInstance(desc_outer, final_task) 
-
-
-prueba_learner <- makeLearner("classif.randomForest", mtry = 1, ntree = 266, nodesize = 45)
-# prueba_learner <- makeLearner("classif.ranger", mtry = 1, num.trees = 45, min.node.size = 25)
-
-set.seed(1234)
-prueba_results <- resample(learner = prueba_learner, 
-                    task = final_task, 
-                    resampling = partition_outer,
-                    measures = list(tpr), 
-                    models = TRUE,
-                    show.info = TRUE)
-```
-
-
-## SUrvival Analysis
-
-In this section we want to do a comparison of two different approaches, statistic-based and generic classification. To do so, we have independently chosen the most important features given by each approach, and we will be performing the same machine learning analysis to see which gets a higher true positive rate. Every parameter (e.g. validation methodology, search space) will be the same as the previous analysis.
-
-```{r, echo=FALSE}
-data_surv <- as.data.frame(data_surv_tot[train.idxs,]) %>% mutate_at(vars(Gender, Smoking, Diabetes, BP), as.numeric) 
-surv_task <- makeClassifTask(id = "HeartFailure", data = data_surv, target = "Event", positive = 1)
-
-set.seed(1234)
-desc_inner_surv <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = surv_task, stratify = TRUE)
-```
-
-### Tuning models
-
-```{r, message = FALSE, echo=FALSE}
-# learners, search space and control grid previously defined
-
-parallelStartSocket(5)
-
-set.seed(1234)
-tuning_results_surv <- tuneParams(learner = lrn, 
-                                  task = surv_task, 
-                                  resampling = desc_inner_surv, 
-                                  par.set = ps, 
-                                  control = control_grid, 
-                                  measures = list(tpr),
-                                  show.info = FALSE)
-parallelStop()
-```
-
-### Comparing results
-```{r, fig.height=4, fig.width=12, echo=FALSE}
-res_iters_surv <- getTuneResultOptPath(tuning_results_surv)
-t_surv <- res_iters_surv %>% dplyr::select(selected.learner, tpr.test.mean)
-
-p_surv <- ggplot(t_surv, aes(tpr.test.mean, selected.learner)) + 
-         geom_boxplot(aes(color = selected.learner))  + 
-         labs(x = "True Positive Rate (Surv)", y = "")
-
-ggarrange(p_surv, p_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
-```
-
-```{r, echo=FALSE}
-fv2 <- generateFilterValuesData(surv_task, method = "FSelectorRcpp_information.gain")
-plotFilterValues(fv2, feat.type.cols = TRUE) + ggpubr::theme_pubr() + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  ggtitle("Filter Selection \n Information Gain")
-
-fv2$data[order(-value)]
-```
-
-```{r, echo=FALSE}
-data_surv_fs <- as.data.frame(data_surv) %>% dplyr::select(Event, Creatinine, Ejection.Fraction, Ejection.Fraction_Diabetes, Sodium)
-surv_task_fs <- makeClassifTask(id = "HeartFailure", data = data_surv_fs, target = "Event", positive = 1)
-
-set.seed(1234)
-desc_inner_surv_fs <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = surv_task_fs, stratify = TRUE)
-```
-
-### Tuning models
-
-```{r, message = FALSE, echo=FALSE}
-# learners, search space and control grid previously defined
-
-parallelStartSocket(5)
-
-set.seed(1234)
-tuning_results_surv_fs <- tuneParams(learner = lrn, 
-                                     task = surv_task_fs, 
-                                     resampling = desc_inner_surv_fs, 
-                                     par.set = ps, 
-                                     control = control_grid, 
-                                     measures = list(tpr),
-                                     show.info = FALSE)
-parallelStop()
-```
-
-```{r, fig.height=4, fig.width=12, echo=FALSE}
-res_iters_surv_fs <- getTuneResultOptPath(tuning_results_surv_fs)
-t_surv_fs <- res_iters_surv_fs %>% dplyr::select(selected.learner, tpr.test.mean)
-
-p_surv_fs <- ggplot(t_surv_fs, aes(tpr.test.mean, selected.learner)) + 
-             geom_boxplot(aes(color = selected.learner))  + 
-             labs(x = "True Positive Rate (Surv + FSel)", y = "")
-
-res1 <- t_surv %>% group_by(selected.learner) %>% summarise(MedianAllFeat=median(tpr.test.mean), MeanAllFeat=mean(tpr.test.mean))
-res2 <- t_surv_fs %>% group_by(selected.learner) %>% summarise(MedianFSel=median(tpr.test.mean), MeanFSel=mean(tpr.test.mean))
-comparison <- full_join(res1, res2) %>% relocate(selected.learner, MedianAllFeat, MedianFSel)
-comparison
-
-ggarrange(p_surv, p_surv_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
-```
-
-```{r, echo=FALSE}
-# Obtaining best iteration for each learner (selecting features)
-best_res_surv <- res_iters_surv_fs %>% group_by(selected.learner) %>% slice(which.max(tpr.test.mean)) %>% 
-                 relocate(tpr.test.mean, .after = selected.learner)
-
-temp2 <- melt(as.data.frame(best_res_surv)) %>% dplyr::select(-error.message) %>% drop_na() 
-
-tpr.test <- temp2 %>% filter(grepl("tpr", variable)) %>% dplyr::rename(tpr = value) %>% dplyr::select(-variable)
-hyperparam <- temp2 %>% filter(grepl("classif", variable)) 
-
-tuning_res_surv <- full_join(hyperparam, tpr.test) %>% 
-              mutate(parameter = ifelse(grepl("\\.", variable), sub(".*\\.(.*)", "\\1", variable), "")) %>%
-              dplyr::select(selected.learner, tpr, parameter, value) 
-
-rm(temp2, tpr.test, hyperparam)
-tuning_res_surv
-```
-
-### Test result
-
-```{r, echo=FALSE, warning = FALSE}
-final_data_surv <- data_surv_tot %>% dplyr::select(Event, Creatinine, Ejection.Fraction, Ejection.Fraction_Diabetes, Sodium)
-final_surv_task <- makeClassifTask(id = "HeartFailure", data = final_data_surv, target = "Event", positive = 1)
-
-set.seed(1234)
-partition_outer_surv <- makeResampleInstance(desc_outer, final_surv_task) 
-
-# prueba_learner <- makeLearner("classif.rpart", minsplit = 21, maxdepth = 5)
-# prueba_learner <- makeLearner("classif.ranger", mtry = 2, num.trees = 1230, min.node.size = 39)
-prueba_learner <- makeLearner("classif.randomForest", mtry = 2, ntree = 943, nodesize = 42)
-
-set.seed(1234)
-prueba_results <- resample(learner = prueba_learner, 
-                    task = final_surv_task, 
-                    resampling = partition_outer_surv,
-                    measures = list(tpr), 
-                    models = TRUE,
-                    show.info = TRUE)
-```
+*threshold*: threshold for the partial derivatives of the error function as stopping criteria.
+*stepmax*: maximum steps for the training of the neural network, if we make it bigger, we let more time for the algorithm to converge.
 
 
 
-#### NOTES ####
 
-Explicability of the models
+# Comparing tuned models
 
-Stratification (no need for rebalancing because of is not toooo unbalanced. Expain why we stratified.)
 
+
+# Rpart schema
+
+NOT 
+# SUrvival performance
+
+
+
+
+
+
+
+
+#### QUESTIONS ####
+
+3. Explicability of the models?
+
+
+
+
+# Observations
+
+logistic model and LDA, tree
+
+
+
+
+1. find new models P OK
+2. tune parameters of neuralnet P
+3. survival analysis P OK
+4. feature selection M
+5. tuning ofM
+6. Adding why are we tuning some parameters and some no
+7. trying to set the decision boundary at 0.4 instead 0.5
+8. no need for rebalancing because of is not toooo unbalanced. Expain why we stratified.
+9. explain in two lines why the metric we are using.
 
 
 Algorithms like naive bayes benefit from gaussian data
 
-show.info = FALSE
 
+70%-30%???
+ya no son boxplots claro
+train-test (lo del grupo de WhatsApp)
+NOT STRATIFIED!!!!!!
 
-## PIETRO
+Rpart.plot no me funciona
+
 plot_bar try color it
 fix heatmap
