@@ -120,17 +120,15 @@ Only after a rigorous analysis we can start to model the data, since
 before that we will not have a complete comprehension of variables and
 their relationships.
 
-## Pairs of continous variables
+## Pairs of continuous variables
 
 First, we are interested to see the joint and disjoint distribution of
 all the pairs of continous variables.
 
 ```{r graphs1, echo=FALSE}
 g <- ggplot(data, aes(y=TIME))
-
 ggpairs(data %>% dplyr::select(Age, Ejection.Fraction, Sodium, 
-                       Creatinine,Pletelets, CPK ) ) +
-  scale_color_stata()
+                       Creatinine,Pletelets, CPK ) ) 
 ```
 
 The correlation is significantly different from zero only for the
@@ -143,22 +141,23 @@ The, we plotted the binomial variables in order to see if their
 distribution is balanced.
 
 ```{r, echo = FALSE}
+g <- ggplot(data)
 plot_bar(data,
          ncol    = 3,
          title   = "Observations per value",
          ggtheme = theme_bw(),
          theme_config = list(plot.title = element_text(size = 16, face = "bold"),
-                             strip.text = element_text(colour = "black", size = 10, face = 2),
-                             legend.position = "none"))
+                             strip.text = element_text(colour = 1, size = 10, face = 2),
+                             legend.position = "none")) +
+  scale_fill_brewer(palette="Blues")
+
 ```
 
-These ditribution plots show that the proportion of statistical units
-with *Event*=1 is only `{r} sum(data$Event==1)/n`. Even *Gender*,
+These distribution plots show that the proportion of statistical units
+with *Event*=1 is only `r sum(data$Event==1)/n`. Even *Gender*,
 *Smoking* and *BP* have unbalanced distributions, but the number of
 elements in the two levels for all these variables are enough to say
 that we are not in presence of rare classes.
-
-# !!!!!!!! Should we add here this?
 
 In the BMC article cited above, the conclusion is drawn that the
 variables *Ejection.Fraction* and *Creatinine* are the best performers
