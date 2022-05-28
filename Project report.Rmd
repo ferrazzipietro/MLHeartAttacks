@@ -127,8 +127,15 @@ all the pairs of continous variables.
 
 ```{r graphs1, echo=FALSE}
 g <- ggplot(data, aes(y=TIME))
+mycolors <- c("Corr"="deepskyblue")
 ggpairs(data %>% dplyr::select(Age, Ejection.Fraction, Sodium, 
-                       Creatinine,Pletelets, CPK ) ) 
+                       Creatinine,Pletelets, CPK ),
+        aes(col=rep("Corr",224),
+            fill=rep("Corr",224),
+            alpha = 0.4))  +
+  scale_fill_manual(values = mycolors, 
+    aesthetics = c("colour", "fill")) 
+
 ```
 
 The correlation is significantly different from zero only for the
@@ -141,15 +148,14 @@ The, we plotted the binomial variables in order to see if their
 distribution is balanced.
 
 ```{r, echo = FALSE}
-g <- ggplot(data)
+g <- ggplot(data,aes(col=rep("Corr",224), fill=rep("Corr",224)))
 plot_bar(data,
          ncol    = 3,
          title   = "Observations per value",
          ggtheme = theme_bw(),
          theme_config = list(plot.title = element_text(size = 16, face = "bold"),
                              strip.text = element_text(colour = 1, size = 10, face = 2),
-                             legend.position = "none")) +
-  scale_fill_brewer(palette="Blues")
+                             legend.position = "none"))
 
 ```
 
@@ -354,28 +360,28 @@ variable.
 
 ```{r graphs6, echo=FALSE, fig.height = 4, fig.width = 8}
 g <- ggplot(data, aes(y=Sodium))
-g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), fill=as.factor(Event))) +
   labs(title="",x="", y = "", color="Event")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
 
-g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), fill=as.factor(Gender))) +
   labs(title="",x="", y = "", color="Gender")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), fill=as.factor(Smoking))) +
   labs(title="",x="", y = "", color="Smoking")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), fill=as.factor(Diabetes))) +
   labs(title="",x="", y = "", color="Diabetes")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), fill=as.factor(BP))) +
   labs(title="",x="", y = "", color="BP")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), fill=as.factor(Anaemia))) +
   labs(title="",x="", y = "", color="Anaemia")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
@@ -399,28 +405,28 @@ attack while being under observation and people who didn't.
 
 ```{r graphs7, echo=FALSE, fig.height = 4, fig.width = 8}
 g <- ggplot(data, aes(y=Pletelets))
-g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event))) +
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), fill=as.factor(Event))) +
   labs(title="",x="", y = "", color="Event")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
 
-g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender))) +
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), fill=as.factor(Gender))) +
   labs(title="",x="", y = "", color="Gender")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking))) +
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), fill=as.factor(Smoking))) +
   labs(title="",x="", y = "", color="Smoking")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes))) +
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), fill=as.factor(Diabetes))) +
   labs(title="",x="", y = "", color="Diabetes")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP))) +
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), fill=as.factor(BP))) +
   labs(title="",x="", y = "", color="BP")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia))) +
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), fill=as.factor(Anaemia))) +
   labs(title="",x="", y = "", color="Anaemia")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
@@ -451,39 +457,39 @@ LessThan5 <- data_for_creatinine$Creatinine
 LessThan5[! idxLessThan5]=NA
 data_for_creatinine <- data_for_creatinine %>% add_column( LessThan5 = LessThan5)
 
-ggplot(data_for_creatinine) + stat_density(aes(Creatinine), adjust = 2, alpha=1, col=1,geom="line") +
+ggplot(data_for_creatinine) + stat_density(aes(Creatinine), adjust = 2, alpha=1, col="lightblue",geom="line") +
   theme_minimal() + labs(y="Density") +
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=13,face="bold"),
         legend.title =element_text(size=13,face="bold") ,
         legend.text =element_text(size=12,face="bold")) +
- stat_density(aes(data_for_creatinine$LessThan5), adjust = 2, alpha=1, fill=2, col=2,geom="line") 
+ stat_density(aes(data_for_creatinine$LessThan5), adjust = 2, alpha=1, fill=2, col="navy",geom="line") 
 ```
 
 ```{r graphs9, echo=FALSE, fig.height = 4, fig.width = 8}
 g <- ggplot(data %>% filter(Creatinine<5), aes(y=Creatinine))
-g1 <- g + geom_boxplot(aes(x=as.factor(Event), color=as.factor(Event)), coef=2.5) +
+g1 <- g + geom_boxplot(aes(x=as.factor(Event), fill=as.factor(Event)), coef=2.5) +
   labs(title="",x="", y = "", color="Event")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
 
-g2 <- g + geom_boxplot(aes(x=as_factor(Gender), color=as.factor(Gender)), coef=2.5) +
+g2 <- g + geom_boxplot(aes(x=as_factor(Gender), fill=as.factor(Gender)), coef=2.5) +
   labs(title="",x="", y = "", color="Gender")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), color=as.factor(Smoking)), coef=2.5) +
+g3 <- g + geom_boxplot(aes(x=as_factor(Smoking), fill=as.factor(Smoking)), coef=2.5) +
   labs(title="",x="", y = "", color="Smoking")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), color=as.factor(Diabetes)), coef=2.5) +
+g4 <- g + geom_boxplot(aes(x=as_factor(Diabetes), fill=as.factor(Diabetes)), coef=2.5) +
   labs(title="",x="", y = "", color="Diabetes")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g5 <- g + geom_boxplot(aes(x=as_factor(BP), color=as.factor(BP)), coef=2.5) +
+g5 <- g + geom_boxplot(aes(x=as_factor(BP), fill=as.factor(BP)), coef=2.5) +
   labs(title="",x="", y = "", color="BP")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
-g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), color=as.factor(Anaemia)), coef=2.5) +
+g6 <- g + geom_boxplot(aes(x=as_factor(Anaemia), fill=as.factor(Anaemia)), coef=2.5) +
   labs(title="",x="", y = "", color="Anaemia")  +
   scale_fill_brewer(palette="Blues") +
   theme_minimal()
@@ -510,7 +516,7 @@ distribution is unbalanced:
 ```{r graphs10, fig.height = 1.5, fig.width = 5, fig.align = "center", echo=FALSE}
 
 ggplot(data) + stat_density(aes(CPK), adjust = 2,
-                           alpha=0.8) +
+                           alpha=0.7, col="navy", fill="lightblue") +
   theme_minimal() + labs(y="Density") +
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=13,face="bold"),
@@ -1101,7 +1107,7 @@ following pattern:
 3.  Determine resample and measure: which validation strategy will be
     followed and which metric will be used.
 4.  Train the model
-5.  Predict and obtain model accuracy
+5.  Predict and obtain model accuracy ( in our case, we will use the true positive rate)
 
 In our case, since there are many models that we want to apply, we will
 be doing a benchmark before actually training. This will give us a
@@ -1210,7 +1216,7 @@ learners <- list(classif_lrn_glm, classif_lrn_naive, classif_lrn_knn, classif_lr
                  classif_lrn_neuralnet, classif_lrn_xgboost)
 # classif_lrn_ada,
 library(parallelMap)
-parallelStartSocket(2) # start in socket mode and create 2 processes on localhost
+parallelStartSocket(4) # start in socket mode and create 2 processes on localhost
 
 set.seed(1234)
 bmr_classif <- benchmark(learners    = learners, 
@@ -1227,7 +1233,7 @@ parallelStop()
 ### Filter Selection
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-data_fs <- train %>% dplyr::select(-TIME)
+data_fs <- data %>% dplyr::select(-TIME)
 
 fs_task <- makeClassifTask(id = "HeartFailure", data = data_fs, target = "Event", positive = 1)
 ```
@@ -1262,8 +1268,7 @@ fv$data[order(-value)]
 ```
 
 We saw in the BMC article that one of their conclusions was: "Our
-results of these two-feature models show not only that *serum
-creatinine* and *ejection fraction* are sufficient to predict survival
+results of these two-feature models show not only that *serum creatinine* and *ejection fraction* are sufficient to predict survival
 of heart failure patients from medical records, but also that using
 these two features alone can lead to more accurate predictions than
 using the original data set features in its entirety."
@@ -1288,7 +1293,7 @@ desc_inner_fs <- makeResampleInstance("RepCV", reps = 5,  folds = 2, task = fs_t
 
 # Using the same learners defined in previous chunk
 
-parallelStartSocket(2) # start in socket mode and create 2 processes on localhost
+parallelStartSocket(4) # start in socket mode and create 2 processes on localhost
 
 set.seed(1234)
 bmr_fs <- benchmark(learners    = learners, 
@@ -1307,13 +1312,15 @@ bp1 <- plotBMRBoxplots(bmr_classif,
                        measure   = tpr, 
                        order.lrn = getBMRLearnerIds(bmr_classif))  +
        aes(fill = learner.id)  +
-       labs(x = "", y = "True Positive Rate") + scale_fill_brewer(palette="Blues")
+       labs(x = "", y = "True Positive Rate") + scale_fill_brewer(palette="Blues")+
+  ylim(0,0.8)
 
 bp3 <- plotBMRBoxplots(bmr_fs, 
                        measure   = tpr, 
                        order.lrn = getBMRLearnerIds(bmr_classif))  +
        aes(fill = learner.id)  +
-       labs(x = "", y = "True Positive Rate (FSel)") + scale_fill_brewer(palette="Blues")
+       labs(x = "", y = "True Positive Rate (FSel)") + scale_fill_brewer(palette="Blues") +
+  ylim(0,0.8)
 
 ggarrange(bp1, bp3, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
@@ -1383,23 +1390,23 @@ ps <- makeModelMultiplexerParamSet(
   multiplexer = lrn,
   classif.kknn = makeParamSet(makeIntegerParam("k", lower = 5, upper = 15)), # Default is 7-
   classif.rpart = makeParamSet(makeIntegerParam("minsplit", lower = 15, upper = 35), # Default is 20
-                               makeIntegerParam("maxdepth", lower = 5, upper = 10)), # Default is 30
+                               makeIntegerParam("maxdepth", lower = 15, upper = 50)), # Default is 30
   classif.randomForest = makeParamSet(makeIntegerParam("ntree", lower = 20, upper = 500), #Default is 500
                                       makeIntegerParam("mtry",lower = 1, upper = 2), #Default is floor(sy,qrt(features/3)), cannot be larger than number of variables
-                                      makeIntegerParam("nodesize", lower = 10, upper = 50)), #Default is 1
+                                      makeIntegerParam("nodesize", lower = 1, upper = 200)), #Default is 1
   classif.ranger = makeParamSet(makeIntegerParam("mtry", lower = 1, upper = 2), # Same parameters as randomForest
-                                makeIntegerParam("num.trees", lower = 20, upper = 500),
+                                makeIntegerParam("num.trees", lower = 1, upper = 200),
                                 makeIntegerParam("min.node.size", lower = 10, upper = 50)),
   classif.xgboost = makeParamSet(makeNumericParam("eta", lower = 0.2, upper = 0.5), # Default is 0.3
                                  makeIntegerParam("nrounds", lower = 4, upper = 10), # Default is 
                                  makeIntegerParam("max_depth", lower = 3, upper = 10)), # Default is 6
-  classif.neuralnet = makeParamSet(makeIntegerVectorParam("hidden", len = 1, lower = 5, upper = 10),
+  classif.neuralnet = makeParamSet(makeIntegerVectorParam("hidden", len = 1, lower = 1, upper = 10),
                                    makeNumericParam("threshold", lower = 2, upper = 5, trafo = function(x) {10^x}),
                                    makeNumericParam("stepmax", lower = 2, upper = 3, trafo = function(x) {10^x}))
 )
 
 # Random Search
-control_grid <- makeTuneControlRandom(maxit = 200L) # Default is 100, split between the amount of learners
+control_grid <- makeTuneControlRandom(maxit = 500L) # Default is 100, split between the amount of learners
 
 
 parallelStartSocket(5) # start in socket mode and create 2 processes on localhost
@@ -1424,6 +1431,7 @@ tuning_results_fs <- tuneParams(learner = lrn,
 parallelStop()
 ```
 
+# THIS GRAPH DOES NOT MAKE SENSE. DROP IT
 ```{r, fig.height=4, fig.width=12, echo=FALSE}
 #Check results
 res_iters_all <- getTuneResultOptPath(tuning_results_all)
@@ -1444,6 +1452,9 @@ p_fs <- ggplot(t_fs, aes(tpr.test.mean, selected.learner)) +
 
 ggarrange(p_all, p_fs, ncol = 2, nrow = 1, common.legend = TRUE, legend = "right")
 ```
+The best model (in terms of true positive rate) is a Neural Network with ......
+hidden layers and ....
+
 
 Finally, based on these graphs we can conclude that selecting few
 features is essential for this study. Excluding *neuralnet*, that
@@ -1542,7 +1553,7 @@ tuning_res
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # The outer partitioning was defined in the beginning of the document, we just have to update the preprocess of the data
-final_data <- as.data.frame(tot) %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
+final_data <- as.data.frame(data) %>% dplyr::select(Creatinine, Ejection.Fraction, Event)
 desc_outer <- makeResampleDesc("Holdout", split = 3/4, stratify = TRUE)
 final_task <- makeClassifTask(id = "HeartFailure", data = final_data, target = "Event", positive = 1)
 
@@ -1565,7 +1576,7 @@ prueba_results <- resample(learner = prueba_learner,
 
 ## Survival Analysis
 
-In this section we want to do a comparison of two different approaches,
+In this section we want to do a comparison of the two different approaches,
 statistic-based and generic classification. To do so, we have
 independently chosen the most important features given by each approach,
 and we will be performing the same machine learning analysis to see
@@ -1599,7 +1610,7 @@ parallelStop()
 ```
 
 ### Comparing results
-
+# THIS GRAPH IS TO BE DROPPED
 ```{r, fig.height=4, fig.width=12, echo=FALSE, message=FALSE}
 res_iters_surv <- getTuneResultOptPath(tuning_results_surv)
 t_surv <- res_iters_surv %>% dplyr::select(selected.learner, tpr.test.mean)
@@ -1646,6 +1657,7 @@ tuning_results_surv_fs <- tuneParams(learner = lrn,
 parallelStop()
 ```
 
+# THIS SECTION IS WRONG. WE ARE AVERAGING MEANINGLESS THINGS
 ```{r, fig.height=4, fig.width=12, echo=FALSE}
 res_iters_surv_fs <- getTuneResultOptPath(tuning_results_surv_fs)
 t_surv_fs <- res_iters_surv_fs %>% dplyr::select(selected.learner, tpr.test.mean)
