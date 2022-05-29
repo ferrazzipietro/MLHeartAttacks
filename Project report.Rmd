@@ -1564,14 +1564,35 @@ partition_outer <- makeResampleInstance(desc_outer, final_task)
 #prueba_learner <- makeLearner("classif.randomForest", mtry = 1, ntree = 266, nodesize = 45)
 prueba_learner <- makeLearner("classif.randomForest")
 # prueba_learner <- makeLearner("classif.ranger", mtry = 1, num.trees = 45, min.node.size = 25)
+prova_learner <- makeLearner("classif.neuralnet", hidden=4, threshold=1.53e+03, stepmax=575)
 
+# classif_lrn_neuralnet <- makeLearner("classif.neuralnet", id = "neuralnet", predict.type = "prob")
 set.seed(1234)
-prueba_results <- resample(learner = prueba_learner, 
+prueba_results <- resample(learner = prova_learner, 
                     task = final_task, 
                     resampling = partition_outer,
                     measures = list(tpr), 
                     models = TRUE,
                     show.info = TRUE)
+
+# see why the neural network is so good
+library(neuralnet)
+neuralnet <- neuralnet(Event==1~Creatinine + Ejection.Fraction,
+                       data = final_data,
+                       hidden = 4,
+                       threshold=1000,
+                       stepmax=500,
+                       )
+glm <- glm(Event~Creatinine + Ejection.Fraction,
+           family=binomial,
+                       data = final_data)
+predglm <- predict(glm, test, type="response")
+plot(neuralnet)
+pred = predict(neuralnet, newdata=test)
+table(test$Event == 1, pred[, 1] > 0.5)
+table(test$Event, predglm>0.5)
+
+
 ```
 
 ## Survival Analysis
