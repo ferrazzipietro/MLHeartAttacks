@@ -1269,11 +1269,11 @@ plotFilterValues(fv, feat.type.cols = TRUE) + scale_fill_brewer(palette="Blues")
 ```
 
 We saw in the BMC article that one of their conclusions was: "Our
-results of these two-feature models show not only that *serum creatinine*, *ejection fraction* and *age* are sufficient to predict survival
+results of these two-feature models show not only that *serum creatinine* and *ejection fraction* are sufficient to predict survival
 of heart failure patients from medical records, but also that using
 these two features alone can lead to more accurate predictions than
 using the original data set features in its entirety." This is
-consistent with what we are showing here.
+consistent with what we are showing here, with the difference that we added the and *age* as well.
 
 ```{r, echo=FALSE, messagge=FALSE}
 data_fs <- data %>% dplyr::select(Creatinine, Ejection.Fraction, Event, Age)
@@ -1650,9 +1650,10 @@ partition_outer_surv <- makeResampleInstance(desc_outer, final_surv_task)
 # prueba_learner <- makeLearner("classif.rpart", minsplit = 21, maxdepth = 5)
 # prueba_learner <- makeLearner("classif.ranger", mtry = 2, num.trees = 1230, min.node.size = 39)
 prueba_learner <- makeLearner("classif.randomForest", mtry = 2, ntree = 344, nodesize = 34)
+prueba_learner_all <- makeLearner("classif.randomForest", mtry = 2, ntree = 345, nodesize = 20)
 
 set.seed(12345)
-prueba_results_surv <- resample(learner = prueba_learner, 
+prueba_results_surv <- resample(learner = prueba_learner_all, 
                     task = final_surv_task, 
                     resampling = partition_outer_surv,
                     measures = list(tpr), 
