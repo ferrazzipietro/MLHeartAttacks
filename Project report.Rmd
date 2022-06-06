@@ -1664,7 +1664,7 @@ The true positive rate on the test set obtained with the best model selected for
 `r round(prueba_results$measures.test$tpr,2)`.
 
 
-# CONCLUSION
+# CONCLUSIONs
 
 First, we performed an explorative analysis that helped us in understanding the data through the correlation between the variables, their individual and combined distributions and the similarities between them. Thank to that, we were able to exclude one useless variable from our dataset.
 
@@ -1679,5 +1679,13 @@ We then applied the same algorithms to the data modified on the output of the su
 
 We concluded that the usage of a survival model to do feature engineering leaded to better results. 
 
-## Possible extensions and known limitations
-TO BE DONE
+
+# POSSIBLE EXTENSIONS AND KNOWN LIMITATIONS
+
+As we have mentioned previously, we are aware that our study has some limitations. 
+
+One of the main restrictions is the fact that only 299 instances are available to perform the analysis. Having a small data set can lead to results being sensitive to different partitions. This means that changing the seed may sometimes change the accuracy on a study. A clear extension in this sense would be to merge this data set with another related one, making sure that the same procedures were followed in the selection and collection of patients’ data. 
+
+Another limitation that has already been mentioned throughout this project is the low correlations between the predictors and the response variable. Although this is one of the reasons for researchers to be interested in the combined use of traditional techniques with other alternatives, such as machine learning, it is still a limitation for the latter one. This restriction could be addressed by the already mentioned in the previous paragraph, with the aim of having a broader image of the relation between heart failure and the other variables; and the possibility of adding other features that could make predictions more accurate.
+
+All in all, we believe that, given the limitations that this data set presents, we have conducted a thorough analysis of a rather complex field, performing two different approaches and obtaining good results, that may be boosted with the aforementioned extensions.
